@@ -89,19 +89,7 @@ window.GenreShowcase = (() => {
   }
 
   async function preloadCatalog() {
-    await Promise.all(
-      Object.entries(catalog).map(async ([genre, meta]) => {
-        const safe = safeFile(genre);
-        const rel = meta?.image || `${IMG_BASE}${safe}.jpg`;
-        try {
-          const res = await fetch(absUrl(rel));
-          if (res.ok) {
-            const blob = await res.blob();
-            meta._blobUrl = URL.createObjectURL(blob);
-          }
-        } catch (_) {}
-      })
-    );
+    /* 本地 jpg 已入库，直接使用静态路径，避免首屏批量 fetch+blob 卡顿 */
   }
 
   function setPosterBg(wrap, url, color) {
@@ -136,7 +124,6 @@ window.GenreShowcase = (() => {
       `${IMG_BASE}${safe}.svg`,
     ].filter(Boolean);
     const candidates = [...new Set(relCandidates.map(absUrl))];
-    if (meta?._blobUrl) candidates.unshift(meta._blobUrl);
 
     let idx = 0;
     const fail = () => {

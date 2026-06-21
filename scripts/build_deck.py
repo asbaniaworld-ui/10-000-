@@ -1310,7 +1310,7 @@ DECK_PATCH = """
 <script src="../web/js/tableau-theme.js?v=104"></script>
 <script src="../web/js/chart-stories.js?v=122"></script>
 <script src="../web/js/charts.js?v=174"></script>
-<script src="js/genre-showcase.js?v=125"></script>
+<script src="js/genre-showcase.js?v=126"></script>
 <script src="js/artist-showcase.js?v=126"></script>
 <script src="js/story-panel.js?v=119"></script>
 <script src="js/music-player.js?v=123"></script>

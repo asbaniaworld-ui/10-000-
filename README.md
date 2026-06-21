@@ -4,7 +4,16 @@
 
 ## 在线预览
 
-构建完成后，在项目根目录启动本地服务：
+### GitHub Pages
+
+部署完成后访问：
+
+- **演示稿（推荐）**：https://asbaniaworld-ui.github.io/10-000-/deck/
+- **Web 滚动版**：https://asbaniaworld-ui.github.io/10-000-/web/
+
+> 首次推送后需在仓库 **Settings → Pages** 中将 Source 设为 **GitHub Actions**（workflow 已包含在 `.github/workflows/pages.yml`）。
+
+### 本地预览
 
 ```bash
 python -m http.server 8770
