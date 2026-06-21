@@ -1,0 +1,172 @@
+{
+  "Pop": {
+    "image": "images/genres/Pop.jpg",
+    "source": "spotify",
+    "color": "#499894",
+    "blurb": "全球流媒体的王座流派，旋律记忆点与商业传播力的集合。",
+    "wiki": "Pop_music",
+    "track_id": "2plbrEY59IikOBgBGLjaoe",
+    "track": "Die With A Smile",
+    "artist": "Lady Gaga|Bruno Mars"
+  },
+  "Rock": {
+    "image": "images/genres/Rock.jpg",
+    "source": "spotify",
+    "color": "#ff9d9a",
+    "blurb": "吉他、鼓点与反叛叙事，长期占据热门榜核心席位。",
+    "wiki": "Rock_music",
+    "track_id": "0WbMK4wrZ1wFSty9F7FCgu",
+    "track": "Good Luck, Babe!",
+    "artist": "Chappell Roan"
+  },
+  "HipHop": {
+    "image": "images/genres/HipHop.jpg",
+    "source": "spotify",
+    "color": "#79706e",
+    "blurb": "节奏与说唱文化驱动，Explicit 与街头美学高度集中。",
+    "wiki": "Hip_hop_music",
+    "track_id": "6AI3ezQ4o3HUoP6Dhudph3",
+    "track": "Not Like Us",
+    "artist": "Kendrick Lamar"
+  },
+  "Latin": {
+    "image": "images/genres/Latin.jpg",
+    "source": "wikipedia",
+    "color": "#8cd17d",
+    "blurb": "西语世界逆袭全球，舞曲律动与地域身份交织。",
+    "wiki": "Latin_music",
+    "track_id": "2lTm559tuIvatlT1u0JYG2",
+    "track": "BAILE INoLVIDABLE",
+    "artist": "Bad Bunny"
+  },
+  "R&B": {
+    "image": "images/genres/RandB.jpg",
+    "source": "spotify",
+    "color": "#86bcb6",
+    "blurb": "灵魂乐脉络下的情感表达，旋律细腻且制作精良。",
+    "wiki": "Rhythm_and_blues",
+    "track_id": "2CGNAOSuO1MEFCbBRgUzjd",
+    "track": "luther (with sza)",
+    "artist": "Kendrick Lamar|SZA"
+  },
+  "TraditionalMusic": {
+    "image": "images/genres/TraditionalMusic.jpg",
+    "source": "spotify",
+    "color": "#ffbe7d",
+    "blurb": "民族与传统乐器，在长尾曲库中保持文化多样性。",
+    "wiki": "Traditional_music",
+    "track_id": "78HEzDEs1QUnHB2DbxgC1s",
+    "track": "Te Quería Ver",
+    "artist": "Alemán|Neton Vega"
+  },
+  "Electronic": {
+    "image": "images/genres/Electronic.jpg",
+    "source": "spotify",
+    "color": "#a0cbe8",
+    "blurb": "合成器与电子节拍，俱乐部文化与流媒体播放紧密相连。",
+    "wiki": "Electronic_music",
+    "track_id": "3be9ACTxtcL6Zm4vJRUiPG",
+    "track": "blue",
+    "artist": "yung kai"
+  },
+  "Country": {
+    "image": "images/genres/Country.jpg",
+    "source": "spotify",
+    "color": "#d7b5a6",
+    "blurb": "叙事民谣与美国乡村根源，在主流榜中稳定存在。",
+    "wiki": "Country_music",
+    "track_id": "3HlWVKwU0JqJXqJK9DWHnZ",
+    "track": "I'm The Problem",
+    "artist": "Morgan Wallen"
+  },
+  "Folk": {
+    "image": "images/genres/Folk.jpg",
+    "source": "spotify",
+    "color": "#f28e2b",
+    "blurb": "原声吉他与人声叙事，小而美的听众基本盘。",
+    "wiki": "Folk_music",
+    "track_id": "3hRV0jL3vUpRrcy398teAU",
+    "track": "The Night We Met",
+    "artist": "Lord Huron"
+  },
+  "Metal": {
+    "image": "images/genres/Metal.jpg",
+    "source": "spotify",
+    "color": "#b6992d",
+    "blurb": "高能量与极端音色，亚文化圈层鲜明。",
+    "wiki": "Heavy_metal_music",
+    "track_id": "60a0Rd6pjrkxjPbaKzXjfq",
+    "track": "In the End",
+    "artist": "Linkin Park"
+  },
+  "NewAge": {
+    "image": "images/genres/NewAge.jpg",
+    "source": "spotify",
+    "color": "#bab0ac",
+    "blurb": "氛围与冥想质感，播放场景偏功能与疗愈。",
+    "wiki": "New-age_music",
+    "track_id": "4xF4ZBGPZKxECeDFrqSAG4",
+    "track": "snowfall",
+    "artist": "Øneheart|reidenshi"
+  },
+  "EasyListening": {
+    "image": "images/genres/EasyListening.jpg",
+    "source": "spotify",
+    "color": "#f1ce63",
+    "blurb": "轻柔编曲与低刺激听感，适合背景播放。",
+    "wiki": "Easy_listening",
+    "track_id": "5UAN29M5pGWHmD0MkzxOIM",
+    "track": "Brahms Lullaby",
+    "artist": "Lullaby Time"
+  },
+  "Reggae": {
+    "image": "images/genres/Reggae.jpg",
+    "source": "wikipedia",
+    "color": "#e15759",
+    "blurb": "加勒比节奏与低音线条，全球传播的文化符号。",
+    "wiki": "Reggae",
+    "track_id": "6RtPijgfPKROxEzTHNRiDp",
+    "track": "Rude",
+    "artist": "MAGIC!"
+  },
+  "Jazz": {
+    "image": "images/genres/Jazz.jpg",
+    "source": "spotify",
+    "color": "#59a14f",
+    "blurb": "即兴与复杂和声，经典曲目在榜单中历久弥新。",
+    "wiki": "Jazz",
+    "track_id": "0d28khcov6AiegSCpG5TuT",
+    "track": "Feel Good Inc.",
+    "artist": "Gorillaz|De La Soul"
+  },
+  "Christian": {
+    "image": "images/genres/Christian.jpg",
+    "source": "spotify",
+    "color": "#d4a6c8",
+    "blurb": "信仰主题与合唱编制，欧美市场稳定细分。",
+    "wiki": "Contemporary_Christian_music",
+    "track_id": "2UREu1Y8CO4jXkbvqAtP7g",
+    "track": "Monster",
+    "artist": "Skillet"
+  },
+  "Classical": {
+    "image": "images/genres/Classical.jpg",
+    "source": "wikipedia",
+    "color": "#9d7660",
+    "blurb": "管弦与古典名曲，跨时代的高雅音乐资产。",
+    "wiki": "Classical_music",
+    "track_id": "0wrWxW18WK2MkrfDpRHkyh",
+    "track": "Me and the Devil",
+    "artist": "Soap&Skin"
+  },
+  "Blues": {
+    "image": "images/genres/Blues.jpg",
+    "source": "spotify",
+    "color": "#b07aa1",
+    "blurb": "十二小节与蓝调音阶，现代流行音乐的根源之一。",
+    "wiki": "Blues",
+    "track_id": "7kUljt0NM5sISL3OGNVxYd",
+    "track": "Royalty",
+    "artist": "Egzod|Maestro Chives|Neoni"
+  }
+}

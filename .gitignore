@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tableau temp
+~*.twbr
+*.twbr
+
+# Large local assets (processed data is in web/data/)
+*.xlsx
+*.pdf
+
+# Dev / agent artifacts
+.humanize-ppt-runs/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local thumbnails cache (optional regen from twb)
+web/assets/thumbnails/

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>解码流行 bolder. — Spotify 音乐可视化故事</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="header">
+    <a class="logo" href="#">
+      <span class="logo-icon">♪</span>
+      <span>Spotify Story</span>
+    </a>
+    <nav>
+      <ul class="nav-links" id="navLinks"></ul>
+    </nav>
+    <a class="nav-cta" href="#story-1">开始探索</a>
+  </header>
+
+  <section class="hero" id="top">
+    <h1>解码流行 <em>bolder.</em></h1>
+    <p class="hero-sub">从流派王权交替到情绪象限，用数据读懂 Spotify 全球热门歌曲背后的故事。</p>
+    <a class="hero-cta" href="#story-1">进入故事线 ↓</a>
+    <p class="hero-tag">基于 Top 10,000 Spotify 歌曲 · 数据可视化期末作业</p>
+
+    <div class="hero-preview">
+      <div class="preview-bar">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span style="margin-left:8px">故事线预览 · 9 个章节</span>
+      </div>
+      <div class="preview-body">
+        <aside class="preview-sidebar">
+          <h4>章节</h4>
+          <ul class="chapter-list" id="previewChapters"></ul>
+        </aside>
+        <div class="preview-main">
+          <div class="preview-chart-mini" id="heroMiniChart"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="story-container" id="storyContainer"></main>
+
+  <nav class="progress-bar" id="progressBar" aria-label="故事进度"></nav>
+
+  <footer class="footer">
+    <h3>音乐没有标准答案，<em style="font-family:var(--serif);font-style:italic">但有数据可循。</em></h3>
+    <p>数据来源：Spotify Top 10,000 歌曲 · 可视化工具：Tableau · 网页呈现：ECharts</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="js/tableau-theme.js?v=101"></script>
+  <script src="js/charts.js?v=101"></script>
+  <script src="js/main.js?v=101"></script>
+</body>
+</html>

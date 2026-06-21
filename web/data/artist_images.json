@@ -1,0 +1,26 @@
+{
+  "Taylor Swift": {
+    "image": "images/artists/Taylor_Swift.jpg",
+    "genre": "Pop",
+    "color": "#499894",
+    "facePosition": "center 15%"
+  },
+  "Bad Bunny": {
+    "image": "images/artists/Bad_Bunny.jpg",
+    "genre": "Latin",
+    "color": "#8cd17d",
+    "facePosition": "center 22%"
+  },
+  "Drake": {
+    "image": "images/artists/Drake.jpg",
+    "genre": "HipHop",
+    "color": "#79706e",
+    "facePosition": "center 20%"
+  },
+  "Playboi Carti": {
+    "image": "images/artists/Playboi_Carti.jpg",
+    "genre": "HipHop",
+    "color": "#79706e",
+    "facePosition": "center 25%"
+  }
+}

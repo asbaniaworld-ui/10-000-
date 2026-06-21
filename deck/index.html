@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10,000次心跳的采样 · 全球数字音乐的「情绪脉动」报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ============ 主题色(默认:🖋 墨水经典) ============
+       切换主题:从 references/themes.md 复制对应的 :root 块
+       整体替换这几行(--ink / --ink-rgb / --paper / --paper-rgb)
+       其他地方散落的 rgba() 都走 var(--ink-rgb) / var(--paper-rgb),无需逐处改 */
+    --ink:#0a0a0b;
+    --ink-rgb:10,10,11;
+    --paper:#f1efea;
+    --paper-rgb:241,239,234;
+    --paper-tint:#e8e5de;
+    --ink-tint:#18181a;
+
+    /* ============ 字体(跨主题固定) ============ */
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --serif-en:"Playfair Display","Source Serif 4",Georgia,serif;
+    --serif-body-en:"Source Serif 4",Georgia,serif;
+    --serif-zh:"Noto Serif SC",source-han-serif-sc,serif;
+    --sans-zh:"Noto Sans SC",source-han-sans-sc,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--paper);font-family:var(--sans-zh);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+  /* ============ WebGL 双背景 ============ */
+  canvas.bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block;transition:opacity 1.2s ease}
+  canvas#bg-light{opacity:0}
+  canvas#bg-dark{opacity:1}
+  body.light-bg canvas#bg-light{opacity:1}
+  body.light-bg canvas#bg-dark{opacity:0}
+  body.low-power canvas.bg{display:none!important}
+
+  /* ============ Deck 容器 + 翻页 ============ */
+  /* width: NSLIDES * 100vw，会在 JS 里动态矫正 */
+  #deck{position:fixed;inset:0;width:10000vw;height:100vh;display:flex;flex-wrap:nowrap;transition:transform .9s cubic-bezier(.77,0,.175,1);z-index:10;will-change:transform}
+  .slide{width:100vw;height:100vh;flex:0 0 100vw;position:relative;padding:6vh 6vw 10vh 6vw;display:flex;flex-direction:column;overflow:hidden}
+  .slide.light{color:var(--ink);background:var(--paper)}
+  .slide.dark{color:var(--paper);background:var(--ink)}
+
+  /* 默认页：遮罩较厚，保证文字可读 */
+  .slide::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;transition:background .7s ease}
+  .slide.light::before{background:rgba(var(--paper-rgb),.78);backdrop-filter:blur(3px)}
+  .slide.dark::before{background:rgba(var(--ink-rgb),.78);backdrop-filter:blur(3px)}
+  /* Hero 页：遮罩大幅降低，让 WebGL 背景明显透出 */
+  .slide.hero.light::before{background:rgba(var(--paper-rgb),.16);backdrop-filter:none}
+  .slide.hero.dark::before{background:rgba(var(--ink-rgb),.12);backdrop-filter:none}
+  /* Hero 页顶底微弱渐隐，保证 chrome/foot 区域可读 */
+  .slide.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+  .slide.hero.light::after{background:linear-gradient(180deg,rgba(var(--paper-rgb),.28) 0%,rgba(var(--paper-rgb),0) 14%,rgba(var(--paper-rgb),0) 86%,rgba(var(--paper-rgb),.28) 100%)}
+  .slide.hero.dark::after{background:linear-gradient(180deg,rgba(var(--ink-rgb),.32) 0%,rgba(var(--ink-rgb),0) 14%,rgba(var(--ink-rgb),0) 86%,rgba(var(--ink-rgb),.32) 100%)}
+
+  /* ============ Magazine chrome：顶部 meta + 底部 foot ============ */
+  .chrome{display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+  .chrome .left,.chrome .right{display:flex;gap:2.4em;align-items:center}
+  .chrome .sep{width:40px;height:1px;background:currentColor;opacity:.4}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55}
+  .foot .title{font-family:var(--serif-zh);font-weight:400;letter-spacing:.05em;text-transform:none;opacity:.75;font-size:13px}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;padding:6px 14px;border:1px solid currentColor;opacity:.85}
+  .rule{width:100%;height:1px;background:currentColor;opacity:.25;margin:3vh 0}
+  .rule.v{width:1px;height:100%;margin:0}
+
+  /* ============ 字体规则 ============
+     · 衬线（Noto Serif SC / Playfair）：大标题、重点金句、数字
+     · 非衬线（Noto Sans SC）：正文描述、body、补充说明
+     · 等宽（IBM Plex Mono）：kicker、meta 小标签、foot 右侧
+  */
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;opacity:.6;margin-bottom:2.6vh}
+  .display{font-family:var(--serif-en);font-weight:700;font-size:11vw;line-height:.92;letter-spacing:-.025em}
+  .display-zh{font-family:var(--serif-zh);font-weight:700;font-size:7.8vw;line-height:1.04;letter-spacing:-.005em}
+  .h1-zh{font-family:var(--serif-zh);font-weight:700;font-size:4.6vw;line-height:1.12;letter-spacing:-.005em}
+  .h2-zh{font-family:var(--serif-zh);font-weight:600;font-size:3.2vw;line-height:1.2;letter-spacing:0}
+  .h3-zh{font-family:var(--serif-zh);font-weight:500;font-size:1.9vw;line-height:1.35}
+  .body-zh{font-family:var(--sans-zh);font-weight:400;font-size:max(15px,1.22vw);line-height:1.75;opacity:.82;letter-spacing:.01em}
+  .body-serif{font-family:var(--serif-zh);font-weight:400;font-size:max(15px,1.3vw);line-height:1.65;opacity:.88}
+  .lead{font-family:var(--serif-zh);font-weight:400;font-size:1.9vw;line-height:1.4;opacity:.85}
+  .meta{font-family:var(--mono);font-size:max(11px,.88vw);letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+  .big-num{font-family:var(--serif-en);font-weight:800;font-size:10vw;line-height:.85;letter-spacing:-.03em;font-feature-settings:"tnum"}
+  .mid-num{font-family:var(--serif-en);font-weight:700;font-size:5.5vw;line-height:.88;letter-spacing:-.02em;font-feature-settings:"tnum"}
+  .ghost{font-family:var(--serif-en);font-weight:900;font-size:34vw;line-height:.8;opacity:.06;letter-spacing:-.04em;position:absolute;font-feature-settings:"tnum"}
+  em{font-style:italic;font-family:var(--serif-en)}
+  .en{font-family:var(--serif-en);font-style:italic;font-weight:500}
+
+  /* ============ 布局工具 ============ */
+  .col{display:flex;flex-direction:column;gap:2.4vh}
+  .row{display:flex;align-items:center;gap:3vw}
+  .grid-6{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4vw 6vw;flex:1;align-content:center;padding:2vh 0}
+  .grid-9{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3vh 4vw;flex:1;align-content:center}
+  .grid-4{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4vh 6vw;flex:1;align-content:center}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:4vw;flex:1;align-content:center}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:4vw;flex:1;align-items:center}
+  .split-55{display:grid;grid-template-columns:55fr 45fr;gap:5vw;flex:1;align-items:stretch}
+  .fill{flex:1}
+  .center{align-items:center;justify-content:center;text-align:center}
+  .bottom-left{position:absolute;left:6vw;bottom:9vh;max-width:50vw}
+  .bottom-right{position:absolute;right:6vw;bottom:9vh;max-width:50vw;text-align:right}
+  .top-right{position:absolute;right:6vw;top:6vh;text-align:right}
+
+  /* ============ Stat（数字矩阵） ============ */
+  .stat{display:flex;flex-direction:column;gap:1vh;align-items:flex-start}
+  .stat .n{font-family:var(--serif-en);font-weight:800;font-size:8vw;line-height:.88;letter-spacing:-.03em;font-feature-settings:"tnum"}
+  .stat .l{font-family:var(--sans-zh);font-size:max(13px,1.05vw);opacity:.7;margin-top:1vh;font-weight:400;line-height:1.5}
+  .stat .m{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.5;margin-bottom:.2vh}
+
+  /* ============ Callout（引用框） ============ */
+  .callout{padding:3vh 2.4vw;border-left:3px solid currentColor;position:relative;font-family:var(--serif-zh);font-size:max(15px,1.2vw);line-height:1.55;opacity:.92}
+  .slide.light .callout{background:rgba(var(--ink-rgb),.05)}
+  .slide.dark .callout{background:rgba(var(--paper-rgb),.06)}
+  .callout .cite{display:block;margin-top:1.6vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+  .callout .q-big{font-family:var(--serif-zh);font-weight:600;font-size:max(17px,1.6vw);line-height:1.42}
+
+  /* ============ Platform（平台卡） ============ */
+  .plat{display:flex;flex-direction:column;justify-content:flex-end;padding:2vh 0;border-top:1px solid currentColor;border-color:rgba(127,127,127,.35)}
+  .plat .name{font-family:var(--serif-zh);font-weight:700;font-size:1.8vw;margin-bottom:.6vh}
+  .plat .nb{font-family:var(--serif-en);font-weight:700;font-size:3.2vw;letter-spacing:-.02em;line-height:1;font-feature-settings:"tnum"}
+  .plat .sub{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.55;margin-top:.6vh}
+  .plat .fill{font-family:var(--sans-zh);font-weight:300;font-size:2.4vw;opacity:.28;letter-spacing:-.01em;line-height:1}
+
+  /* ============ Rowline（表格行） ============ */
+  .rowline{display:grid;grid-template-columns:1fr 2fr 1fr;gap:2vw;padding:2.2vh 0;border-top:1px solid currentColor;align-items:center;border-color:rgba(127,127,127,.25)}
+  .rowline:last-child{border-bottom:1px solid currentColor;border-color:rgba(127,127,127,.25)}
+  .rowline .k{font-family:var(--serif-zh);font-weight:700;font-size:1.7vw}
+  .rowline .v{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.2vw);opacity:.85;line-height:1.55}
+  .rowline .m{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;justify-self:end}
+
+  /* ============ Pillar（支柱卡片） ============ */
+  .pillar{display:flex;flex-direction:column;gap:1.8vh}
+  .pillar .ic{font-family:var(--serif-en);font-style:italic;font-size:2.6vw;opacity:.45;font-weight:400}
+  .pillar .ic svg{width:2.8vw;height:2.8vw;stroke-width:1.2;opacity:.7}
+  .pillar .t{font-family:var(--serif-zh);font-weight:700;font-size:2.4vw;line-height:1.1}
+  .pillar .d{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.1vw);opacity:.76;line-height:1.6}
+
+  /* ============ Signature / Highlight ============ */
+  .sign{font-family:var(--serif-en);font-style:italic;font-weight:500;font-size:2vw;opacity:.7}
+  .hi{position:relative;display:inline}
+  .slide.dark .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--paper-rgb),.15);z-index:-1}
+  .slide.light .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--ink-rgb),.08);z-index:-1}
+
+  /* ============ Icons（Lucide via CDN） ============ */
+  .ico{width:1em;height:1em;display:inline-block;vertical-align:-.12em;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .ico-lg,.ico-md,.ico-sm{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+  .ico-lg{width:2.6vw;height:2.6vw;stroke-width:1.2;display:inline-block}
+  .ico-md{width:1.8vw;height:1.8vw;stroke-width:1.3;display:inline-block;vertical-align:-.4em}
+  .ico-sm{width:1.1vw;height:1.1vw;stroke-width:1.4;display:inline-block;vertical-align:-.15em;opacity:.7}
+
+  /* ============ 图片占位（虚线框，提示设计师位置） ============ */
+  .img-slot{border:1.5px dashed rgba(127,127,127,.4);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1vh;padding:2vh 2vw;font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;opacity:.55;position:relative;aspect-ratio:16/9;width:100%;max-height:56vh;margin-inline:auto;box-sizing:border-box}
+  .img-slot::before{content:"";position:absolute;inset:8px;border:1px solid currentColor;opacity:.2}
+  .img-slot .plus{font-size:2vw;font-weight:300;opacity:.5;letter-spacing:0}
+  .img-slot .label{position:relative;z-index:2;text-align:center}
+  .img-slot.r-4x3{aspect-ratio:4/3}
+  .img-slot.r-3x2{aspect-ratio:3/2}
+  .img-slot.r-1x1{aspect-ratio:1/1}
+
+  /* ============ 图片实填框（关键：固定高度 + 只裁底部） ============
+     重要约束：高度用内联 height:Nvh 精确控制，不要用 aspect-ratio（会撑破布局）
+     object-position:top center 保证严禁裁剪顶部和左右，只裁剪底部
+  */
+  .frame-img{overflow:hidden;position:relative;background:rgba(0,0,0,.04);box-sizing:border-box;width:100%;border-radius:4px}
+  .slide.dark .frame-img{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
+  .frame-img > img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+  .frame-img.fit-contain > img{object-fit:contain;object-position:center center}
+  .frame-img.r-16x9{aspect-ratio:16/9;max-height:64vh}
+  .frame-img.r-16x10{aspect-ratio:16/10;max-height:56vh}
+  .frame-img.r-4x3{aspect-ratio:4/3;max-height:56vh}
+  .frame-img.r-3x2{aspect-ratio:3/2;max-height:46vh}
+  .frame-img.r-3x4{aspect-ratio:3/4;max-height:60vh}
+  .frame-img.r-1x1{aspect-ratio:1/1;max-height:50vh}
+  .frame-img.h-16{height:16vh}
+  .frame-img.h-18{height:18vh}
+  .frame-img.h-22{height:22vh}
+  .frame-img.h-26{height:26vh}
+  .frame-img.h-28{height:28vh}
+  .frame-cap{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;margin-top:.8vh;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.72}
+  .frame-cap .pf{font-family:var(--serif-zh);font-weight:600;font-size:max(13px,1vw);letter-spacing:.04em;text-transform:none;opacity:.94}
+  .frame-cap .nb{font-family:var(--serif-en);font-style:italic;font-size:max(15px,1.2vw);letter-spacing:.02em;text-transform:none;opacity:.88}
+  .frame-cap .idx{font-family:var(--mono);opacity:.5}
+  figure.tile{display:flex;flex-direction:column;margin:0;min-width:0}
+  figure.tile > .frame-img{flex:0 0 auto}
+
+  /* ============ 导航 ============ */
+  #nav{position:fixed;left:50%;bottom:2.6vh;transform:translateX(-50%);z-index:30;display:flex;gap:10px;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #nav .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s ease;border:0;padding:0}
+  #nav .dot:hover{background:rgba(255,255,255,.5);transform:scale(1.15)}
+  #nav .dot.active{background:rgba(255,255,255,.95);width:22px;border-radius:999px}
+  body.light-bg #nav{background:rgba(255,255,255,.25)}
+  body.light-bg #nav .dot{background:rgba(var(--ink-rgb),.25)}
+  body.light-bg #nav .dot.active{background:rgba(var(--ink-rgb),.9)}
+  #hint{position:fixed;bottom:3vh;right:3vw;z-index:30;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.4;mix-blend-mode:difference;color:#aaa}
+  body.low-power #hint{opacity:.72;color:var(--paper);mix-blend-mode:normal}
+  body.light-bg.low-power #hint{color:var(--ink)}
+
+  /* ============================================================
+     ============ LAYOUTS API · 面向 agent 的类（v2）============
+     所有 layouts.md 中的骨架都基于下面这套命名。
+     如果你在 layouts.md 里看到某个类，它必须在下面有定义。
+     ============================================================ */
+
+  /* ---------- .frame：每页主内容容器 ---------- */
+  .frame{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  /* 当 .frame 同时加了 grid 类时，grid 的 display:grid 覆盖 flex */
+  .frame.grid-2-7-5,
+  .frame.grid-2-6-6,
+  .frame.grid-2-8-4,
+  .frame.grid-3-3,
+  .frame.grid-6{display:grid}
+
+  /* ---------- 标题层级（API 名称，衬线为主） ---------- */
+  .h-hero{
+    font-family:var(--serif-zh);
+    font-weight:900;
+    font-size:10vw;
+    line-height:.96;
+    letter-spacing:-.02em;
+  }
+  .h-xl{
+    font-family:var(--serif-zh);
+    font-weight:700;
+    font-size:6.2vw;
+    line-height:1.08;
+    letter-spacing:-.01em;
+  }
+  .h-sub{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:3.1vw;
+    line-height:1.25;
+    letter-spacing:0;
+    opacity:.7;
+  }
+  .h-md{
+    font-family:var(--serif-zh);
+    font-weight:600;
+    font-size:2.3vw;
+    line-height:1.3;
+  }
+  /* 英文标题专用（Playfair 衬线） */
+  .h-hero-en,.h-xl-en{font-family:var(--serif-en);letter-spacing:-.025em}
+
+  /* ---------- lead 引语 ---------- */
+  .lead{
+    font-family:var(--serif-zh);
+    font-weight:400;
+    font-size:1.75vw;
+    line-height:1.5;
+    opacity:.86;
+  }
+
+  /* ---------- meta-row 底部元数据 ---------- */
+  .meta-row{
+    display:flex;
+    gap:1.2em;
+    align-items:baseline;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:max(12px,.92vw);
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- stat-card（数据大字报用） ---------- */
+  .stat-card{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    align-items:flex-start;
+    padding-top:1.6vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.3);
+  }
+  .stat-card .stat-label{
+    font-family:var(--mono);
+    font-size:max(10px,.78vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.55;
+  }
+  .stat-card .stat-nb{
+    font-family:var(--serif-en);
+    font-weight:800;
+    font-size:5.8vw;
+    line-height:.9;
+    letter-spacing:-.03em;
+    font-feature-settings:"tnum";
+    margin-top:.4vh;
+  }
+  .stat-card .stat-nb .stat-unit{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:.38em;
+    letter-spacing:0;
+    opacity:.72;
+    margin-left:.14em;
+  }
+  .stat-card .stat-note{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(13px,1.05vw);
+    line-height:1.5;
+    opacity:.72;
+    margin-top:.6vh;
+  }
+  /* 当 stat-card 用于 grid-4（2x2），数字适度放大；若页面有标题+引文在上方，可内联 style 覆盖为更小值 */
+  .grid-4 .stat-card .stat-nb{font-size:5vw}
+  /* 当只有 3 个，字也可以稍大 */
+  .grid-3 .stat-card .stat-nb{font-size:6.8vw}
+
+  /* ---------- pipeline（流水线） ---------- */
+  .pipeline-section{
+    margin-top:4.4vh;
+    padding-top:2.8vh;
+    border-top:1px dashed rgba(127,127,127,.32);
+  }
+  .pipeline-section:first-of-type{
+    border-top:0;
+    padding-top:0;
+    margin-top:3vh;
+  }
+  .pipeline-label{
+    font-family:var(--mono);
+    font-size:max(11px,.85vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.62;
+    margin-bottom:2.2vh;
+  }
+  .pipeline{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:1.2vw;
+  }
+  .pipeline[data-cols="3"]{grid-template-columns:repeat(3,1fr)}
+  .pipeline[data-cols="4"]{grid-template-columns:repeat(4,1fr)}
+  .pipeline[data-cols="6"]{grid-template-columns:repeat(6,1fr)}
+  .step{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    padding-top:1.4vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.35);
+  }
+  .step-nb{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-weight:500;
+    font-size:1.15vw;
+    opacity:.45;
+  }
+  .step-title{
+    font-family:var(--sans-zh);
+    font-weight:700;
+    font-size:1.55vw;
+    letter-spacing:.01em;
+    line-height:1.2;
+  }
+  .step-desc{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(12px,.95vw);
+    line-height:1.45;
+    opacity:.72;
+  }
+
+  /* ---------- 网格（layouts.md 所用） ---------- */
+  /* 这些类独立挂到任何容器上都能生效，不依赖 .frame 复合选择器 */
+  .grid-2-7-5{display:grid;grid-template-columns:7fr 5fr;gap:3vw 4vh;align-items:start}
+  .grid-2-6-6{display:grid;grid-template-columns:1fr 1fr;gap:3vw 4vh;align-items:start}
+  .grid-2-8-4{display:grid;grid-template-columns:8fr 4fr;gap:3vw 4vh;align-items:start}
+  .grid-3-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-auto-rows:minmax(0,1fr);
+    gap:2.4vh 2vw;
+  }
+  /* grid-6 已在旧样式里定义为 3x2，这里仅补 align */
+
+  /* ---------- 图片 frame-img（layouts.md 主命名） ---------- */
+  /* 在旧样式里已定义，这里补 img-cap 命名别名与增强 */
+  figure.frame-img{margin:0;display:flex;flex-direction:column;min-width:0}
+  .img-cap{
+    display:block;
+    margin-top:.8vh;
+    font-family:var(--mono);
+    font-size:max(10px,.8vw);
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+  /* callout src 命名别名 */
+  .callout-src{
+    display:block;
+    margin-top:1.6vh;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- chrome & foot 补位（layouts.md 简单写法） ---------- */
+  .chrome{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.2em;text-transform:uppercase;opacity:.62}
+  .foot{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.18em;text-transform:uppercase;opacity:.5}
+
+  /* ============ 动效系统(Motion One 驱动) ============
+     所有 [data-anim] 元素默认隐藏,进入页面时由 JS 逐个揭示。
+     - cascade(默认):按 DOM 顺序 stagger 120ms 淡入 + y:16→0
+     - hero(hero 页自动):慢一点的 stagger 180ms
+     - quote(含 [data-anim="line"]):逐行 600ms 淡入
+     - directional(含 [data-anim="left|right"]):左→分隔线→右
+     - pipeline(data-animate="pipeline"):Space/→ 手动推进
+     Motion One 没加载成功时(CDN 断 + 本地丢),所有 [data-anim] 会兜底显示。
+  */
+  [data-anim]{opacity:1}
+  body.motion-ready [data-anim]{opacity:0}
+  body.motion-ready [data-anim="left"]{transform:translateX(-24px)}
+  body.motion-ready [data-anim="right"]{transform:translateX(24px)}
+  body.motion-ready [data-anim="line"]{opacity:0;transform:translateY(10px)}
+  body.motion-ready [data-animate="pipeline"] [data-anim]{opacity:.15}
+  body.low-power #deck{transition:none!important}
+  body.low-power *,
+  body.low-power *::before,
+  body.low-power *::after{animation:none!important;transition:none!important}
+  body.low-power.motion-ready [data-anim],
+  body.low-power [data-anim]{opacity:1!important;transform:none!important}
+
+  /* ---------- 响应式降级 ---------- */
+  @media (max-width:900px){
+    .display{font-size:16vw}
+    .display-zh{font-size:12vw}
+    .h1-zh{font-size:7vw}
+    .h-hero{font-size:14vw}
+    .h-xl{font-size:9vw}
+    .pipeline{grid-template-columns:repeat(2,1fr)}
+    .grid-2-7-5,.grid-2-6-6,.grid-2-8-4{grid-template-columns:1fr}
+  }
+
+  .deck-layout-4060{display:grid;grid-template-columns:40fr 60fr;gap:3vw;flex:1;align-items:stretch}
+  .deck-layout-ch8{display:grid;grid-template-columns:50fr 50fr;gap:2.4vw;flex:1;align-items:stretch}
+  .deck-layout-chart-heavy{display:grid;grid-template-columns:28fr 72fr;gap:2.2vw;flex:1;align-items:stretch}
+  .deck-layout-ch5{display:grid;grid-template-columns:34fr 66fr;gap:3.2vw;flex:1;align-items:stretch}
+  .deck-split{align-items:stretch;padding-top:1.2vh;flex:1;min-height:0}
+  .deck-text{gap:1vh;max-height:76vh;overflow:auto;padding-right:.5vw;justify-content:flex-start}
+  .deck-text::-webkit-scrollbar{width:3px}
+  .deck-text::-webkit-scrollbar-thumb{background:rgba(var(--ink-rgb),.2);border-radius:2px}
+  .slide.dark .deck-text::-webkit-scrollbar-thumb{background:rgba(var(--paper-rgb),.25)}
+  .split-slide .h1-zh{font-size:2.5vw;line-height:1.12;margin-bottom:.15vh}
+  .deck-lead{font-size:max(13px,.92vw)!important;line-height:1.52!important;opacity:.82;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .deck-lead-compact{-webkit-line-clamp:4;font-size:max(12px,.88vw)!important;line-height:1.48!important}
+  .deck-detail{font-size:max(12px,.86vw)!important;line-height:1.48!important;opacity:.72;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .deck-bullets{margin:.15vh 0 0 1em;line-height:1.42;font-size:max(11px,.84vw)!important;opacity:.78}
+  .deck-bullets li{margin:.2em 0}
+  .chart-panel{background:#fff;color:#111;border-radius:6px;padding:10px 12px 8px;min-height:68vh;height:100%;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+  .slide.light .chart-panel{box-shadow:0 12px 40px rgba(0,0,0,.08)}
+  .chart-panel-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;margin-bottom:4px;padding:0 2px;gap:.8vw}
+  .chart-panel-head span:last-child{text-align:right;max-width:52%;line-height:1.35}
+  .deck-chart{flex:1;min-height:62vh;width:100%}
+  .deck-chart.wide{min-height:64vh}
+  .deck-chart.matrix{min-height:68vh}
+  .deck-chart.heatmap{min-height:68vh}
+  .deck-chart.facet{min-height:66vh}
+  .ch4-golden .deck-lead{-webkit-line-clamp:2}
+  .ch4-golden .deck-bullets{font-size:max(10px,.78vw)!important;margin-top:.1vh}
+  .ch4-golden .deck-bullets li{margin:.15em 0}
+  .ch4-golden .ch4-aside{flex:1;display:flex;flex-direction:column;gap:.45vh;margin-top:.35vh;padding-top:.55vh;border-top:1px solid rgba(var(--ink-rgb),.12);min-height:0}
+  .ch4-golden .ch4-aside-head{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;opacity:.42;margin-bottom:.2vh;flex-shrink:0}
+  .ch4-golden .golden-matrix-wrap,
+  .ch5-outlier .golden-matrix-wrap{display:flex;flex:1;min-height:0;align-items:stretch;gap:0;overflow:visible}
+  .ch4-golden .golden-matrix-wrap .deck-chart.matrix,
+  .ch5-outlier .golden-matrix-wrap .deck-chart.matrix{flex:1;min-width:0;min-height:0;overflow:visible}
+  .ch4-golden .golden-ref-rail,
+  .ch5-outlier .golden-ref-rail{width:min(10.5vw,118px);flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid #ececec;padding:0 0 0 7px;margin-left:2px}
+  .ch5-outlier .golden-ref-rail.is-compact{width:min(10vw,108px)}
+  .ch4-golden .golden-ref-rail-head,
+  .ch5-outlier .golden-ref-rail-head{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#999;text-align:center;padding:2px 0 6px;flex-shrink:0}
+  .ch4-golden .golden-ref-rail-body,
+  .ch5-outlier .golden-ref-rail-body{flex:1;display:grid;grid-template-rows:repeat(4,1fr);gap:3px;padding-top:8.5%;min-height:0}
+  .golden-ref-rail.is-compact .golden-ref-rail-body{padding-top:7.2%}
+  .ch4-golden .golden-ref-cell,
+  .ch5-outlier .golden-ref-cell{display:flex;gap:5px;align-items:stretch;min-height:0;padding:2px 0}
+  .ch4-golden .golden-ref-stripe,
+  .ch5-outlier .golden-ref-stripe{width:5px;border-radius:2px;flex-shrink:0;opacity:.92}
+  .ch4-golden .golden-ref-body,
+  .ch5-outlier .golden-ref-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0}
+  .ch4-golden .golden-ref-metric,
+  .ch5-outlier .golden-ref-metric{font-family:var(--mono);font-size:max(7px,.58vw);font-weight:600;letter-spacing:.04em;line-height:1.2;display:flex;align-items:baseline;gap:.2vw;flex-wrap:wrap}
+  .ch4-golden .golden-ref-unit,
+  .ch5-outlier .golden-ref-unit{font-size:max(6px,.5vw);font-weight:500;opacity:.55;letter-spacing:.02em}
+  .ch4-golden .golden-ref-items,
+  .ch5-outlier .golden-ref-items{display:flex;flex-direction:column;gap:1px}
+  .ch4-golden .golden-ref-item,
+  .ch5-outlier .golden-ref-item{display:grid;grid-template-columns:auto 1fr;gap:0 4px;align-items:baseline;line-height:1.25}
+  .ch4-golden .golden-ref-val,
+  .ch5-outlier .golden-ref-val{font-family:var(--mono);font-size:max(7px,.56vw);font-weight:600;letter-spacing:.02em;text-align:right;min-width:2.2em}
+  .ch4-golden .golden-ref-lbl,
+  .ch5-outlier .golden-ref-lbl{font-size:max(7px,.54vw);color:#666;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ch4-golden .golden-ref-rail-foot,
+  .ch5-outlier .golden-ref-rail-foot{font-family:var(--mono);font-size:max(6px,.5vw);letter-spacing:.03em;color:#bbb;text-align:center;line-height:1.35;padding:5px 0 2px;flex-shrink:0}
+  .golden-ref-rail.is-compact .golden-ref-val{font-size:max(6px,.52vw);min-width:2em}
+  .golden-ref-rail.is-compact .golden-ref-lbl{font-size:max(6px,.5vw)}
+  .ch4-golden .ch4-golden-list{display:flex;flex-direction:column;gap:.42vh;flex:1;min-height:0;overflow:auto;padding-right:.15vw}
+  .ch4-golden .ch4-golden-list::-webkit-scrollbar{width:3px}
+  .ch4-golden .ch4-golden-list::-webkit-scrollbar-thumb{background:rgba(var(--ink-rgb),.18);border-radius:2px}
+  .ch4-golden .ch4-golden-track{display:flex;flex-direction:column;gap:.12vh;width:100%;padding:.55vh .5vw;border:1px solid rgba(var(--ink-rgb),.12);border-radius:5px;background:rgba(var(--ink-rgb),.03);cursor:pointer;text-align:left;color:inherit;font:inherit;transition:background .2s,border-color .2s,box-shadow .2s}
+  .ch4-golden .ch4-golden-track:hover{background:rgba(117,161,199,.1);border-color:rgba(117,161,199,.4)}
+  .ch4-golden .ch4-golden-track.is-active{border-color:rgba(117,161,199,.55);background:rgba(117,161,199,.14);box-shadow:inset 0 0 0 1px rgba(117,161,199,.22)}
+  .ch4-golden .ch4-gt-tier{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;opacity:.55;color:#75a1c7}
+  .ch4-golden .ch4-gt-title{font-family:var(--serif-zh);font-size:max(12px,.88vw);font-weight:600;line-height:1.25}
+  .ch4-golden .ch4-gt-artist{font-size:max(10px,.76vw);opacity:.62;line-height:1.3}
+  .ch4-golden .ch4-gt-metrics{font-family:var(--mono);font-size:max(9px,.68vw);letter-spacing:.03em;opacity:.72;margin-top:.1vh}
+  .ch4-golden .ch4-gt-meta{font-family:var(--mono);font-size:max(8px,.64vw);opacity:.45}
+  .ch4-golden .ch4-gt-play{font-family:var(--mono);font-size:max(9px,.68vw);letter-spacing:.06em;opacity:.55;margin-top:.15vh;color:#499894}
+  .ch4-golden .chart-panel{padding:12px 14px 10px;overflow:visible}
+  .ch4-golden .deck-chart.matrix{min-height:70vh}
+  .ch6-heat .deck-text{display:flex;flex-direction:column;gap:1.35vh;min-height:0;max-height:76vh;padding-right:.8vw}
+  .ch6-heat .h1-zh{margin-bottom:.65vh;line-height:1.14;font-size:2.15vw}
+  .ch6-heat .deck-lead-compact{-webkit-line-clamp:2;margin-bottom:.5vh;line-height:1.55!important;flex-shrink:0}
+  .ch6-heat .ch6-aside{flex:1;display:flex;flex-direction:column;gap:.7vh;margin-top:.65vh;padding-top:.85vh;border-top:1px solid rgba(var(--paper-rgb),.12);min-height:0;overflow:hidden}
+  .ch6-heat .ch6-tl-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;opacity:.45;margin-bottom:.45vh;flex-shrink:0}
+  .ch6-heat .ch6-tl-hint{margin:0 0 .35vh;font-family:var(--mono);font-size:max(7px,.56vw);letter-spacing:.06em;opacity:.42;flex-shrink:0}
+  .ch6-heat .ch6-timeline{flex:1;overflow:auto;padding:.65vh .25vw .5vh 0;min-height:0;display:flex;flex-direction:column;gap:.15vh}
+  .ch6-heat .ch6-timeline::-webkit-scrollbar{width:3px}
+  .ch6-heat .ch6-timeline::-webkit-scrollbar-thumb{background:rgba(var(--paper-rgb),.22);border-radius:2px}
+  .ch6-heat .ch6-tl-item{display:grid;grid-template-columns:10px 1fr;gap:0 .6vw;position:relative;padding-bottom:.85vh}
+  .ch6-heat .ch6-tl-item[data-ch6-year]{cursor:pointer}
+  .ch6-heat .ch6-tl-item[data-ch6-year]:hover .ch6-tl-body{background:rgba(117,161,199,.05)}
+  .ch6-heat .ch6-tl-item.is-tl-active .ch6-tl-marker{background:#75a1c7;box-shadow:0 0 0 3px rgba(117,161,199,.28)}
+  .ch6-heat .ch6-tl-item.is-tl-active:not(.is-key) .ch6-tl-body{border-left:2px solid rgba(117,161,199,.35);padding-left:.45vw}
+  .ch6-heat .ch6-tl-item.is-tl-active .ch6-tl-year{color:#9ec5e8}
+  .ch6-heat .ch6-tl-item:last-child{padding-bottom:0}
+  .ch6-heat .ch6-tl-item:not(:last-child)::before{content:"";position:absolute;left:4px;top:8px;bottom:0;width:1px;background:rgba(var(--paper-rgb),.18)}
+  .ch6-heat .ch6-tl-marker{width:7px;height:7px;border-radius:50%;background:rgba(117,161,199,.55);border:1px solid rgba(var(--paper-rgb),.25);margin-top:.4vh;position:relative;z-index:1;flex-shrink:0}
+  .ch6-heat .ch6-tl-item.is-key .ch6-tl-marker{width:9px;height:9px;background:#75a1c7;border:1.5px solid rgba(255,255,255,.35);box-shadow:0 0 0 3px rgba(117,161,199,.22);margin-top:.32vh}
+  .ch6-heat .ch6-tl-item.is-key .ch6-tl-body{padding:.45vh .5vw .5vh;border-left:2px solid rgba(117,161,199,.45);background:rgba(117,161,199,.08);border-radius:0 4px 4px 0}
+  .ch6-heat .ch6-tl-body{min-width:0}
+  .ch6-heat .ch6-tl-headline{display:flex;align-items:center;flex-wrap:wrap;gap:.3vw .4vw;margin-bottom:.18vh;line-height:1.25}
+  .ch6-heat .ch6-tl-year{font-family:var(--mono);font-size:max(9px,.7vw);font-weight:600;color:rgba(117,161,199,.85);letter-spacing:.04em;flex-shrink:0}
+  .ch6-heat .ch6-tl-item.is-key .ch6-tl-year{color:#9ec5e8;font-size:max(10px,.74vw)}
+  .ch6-heat .ch6-tl-title{font-family:var(--serif-zh);font-size:max(11px,.84vw);font-weight:600;opacity:.92}
+  .ch6-heat .ch6-tl-item.is-key .ch6-tl-title{opacity:1}
+  .ch6-heat .ch6-tl-badge{font-family:var(--mono);font-size:max(6px,.52vw);letter-spacing:.08em;text-transform:uppercase;padding:.1vh .28vw;border:1px solid rgba(117,161,199,.45);color:#9ec5e8;border-radius:2px;line-height:1.3}
+  .ch6-heat .ch6-tl-text{margin:0;font-size:max(9px,.7vw);line-height:1.5;opacity:.75}
+  .ch6-heat .ch6-tl-item.is-key .ch6-tl-text{opacity:.88}
+  .ch6-heat .chart-panel{padding:12px 14px 10px}
+  .ch6-heat .deck-chart.heatmap{min-height:70vh}
+  #story-drawer{position:fixed;left:0;top:50%;z-index:180;width:min(340px,36vw);max-height:72vh;overflow:auto;padding:2.2vh 1.4vw 2vh 1.6vw;background:rgba(var(--ink-rgb),.96);color:var(--paper);border:1px solid rgba(var(--paper-rgb),.12);border-left:none;border-radius:0 10px 10px 0;box-shadow:8px 0 40px rgba(0,0,0,.22);transform:translate(-108%,-50%);transition:transform .5s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(14px);pointer-events:none;opacity:0}
+  #story-drawer.is-on{transform:translate(0,-50%);pointer-events:auto;opacity:1}
+  #story-drawer .sd-close{position:absolute;top:.8vh;right:.6vw;background:transparent;border:none;color:inherit;font-size:20px;line-height:1;cursor:pointer;opacity:.45;padding:4px 8px}
+  #story-drawer .sd-close:hover{opacity:.9}
+  #story-drawer .sp-title{font-family:var(--serif-zh);font-size:max(16px,1.1vw);font-weight:600;margin-bottom:.6vh;padding-right:1.4em}
+  #story-drawer .sp-head{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-bottom:.4vh}
+  #story-drawer p{font-size:max(12px,.88vw);line-height:1.55;margin:.35vh 0;opacity:.88}
+  #story-drawer .sp-num{font-family:var(--mono);font-size:10px;opacity:.5;margin-top:.6vh}
+  .ch1-genre .deck-lead{-webkit-line-clamp:unset;display:block;overflow:visible;line-height:1.62!important}
+  .ch1-genre .deck-text{display:flex;flex-direction:column;gap:1.4vh;min-height:0;justify-content:flex-start}
+  .ch1-genre .ch1-aside{margin-top:.6vh;padding-top:1vh;border-top:1px solid rgba(var(--ink-rgb),.12);display:flex;flex-direction:column;gap:.7vh}
+  .ch1-genre .ch1-hint{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.55;margin:0}
+  .ch1-genre .ch1-stats-head{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;opacity:.45}
+  .ch1-genre .ch1-stats{display:flex;flex-direction:column;gap:.45vh}
+  .ch1-genre .ch1-stat{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.45vw;padding:.5vh .4vw;border:1px solid rgba(var(--ink-rgb),.1);border-radius:4px;background:rgba(var(--ink-rgb),.03)}
+  .ch1-genre .ch1-stat-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .ch1-genre .ch1-stat-main{display:flex;flex-direction:column;gap:.1vh;min-width:0}
+  .ch1-genre .ch1-stat-genre{font-family:var(--serif-zh);font-size:max(12px,.88vw);font-weight:600;line-height:1.2}
+  .ch1-genre .ch1-stat-val{font-family:var(--mono);font-size:8px;letter-spacing:.06em;opacity:.55}
+  .ch1-genre .ch1-stat-pct{font-family:var(--mono);font-size:10px;letter-spacing:.04em;opacity:.7;text-align:right}
+  .ch1-genre .ch1-footnote{font-family:var(--mono);font-size:8px;letter-spacing:.06em;opacity:.42;margin:0;line-height:1.4}
+  .ch3-artist .deck-lead{-webkit-line-clamp:unset;display:block;overflow:visible;line-height:1.55!important;margin-bottom:0;opacity:.82}
+  .ch3-artist .deck-text{display:flex;flex-direction:column;gap:.75vh;min-height:0;justify-content:flex-start;max-height:76vh}
+  .ch3-artist .ch3-aside{flex:1;display:flex;flex-direction:column;gap:.55vh;margin-top:.35vh;padding-top:.65vh;border-top:1px solid rgba(var(--ink-rgb),.12);min-height:0}
+  .ch3-artist .ch3-aside-head{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;opacity:.45;margin-bottom:.15vh}
+  .ch3-artist .ch3-artist-list{display:flex;flex-direction:column;gap:.42vh;flex:1;min-height:0;overflow:auto;padding-right:.2vw}
+  .ch3-artist .ch3-artist-list::-webkit-scrollbar{width:3px}
+  .ch3-artist .ch3-artist-list::-webkit-scrollbar-thumb{background:rgba(var(--ink-rgb),.18);border-radius:2px}
+  .ch3-artist .ch3-artist-mini{display:grid;grid-template-columns:50px 1fr;gap:.45vw .55vw;padding:.55vh .5vw;border:1px solid rgba(var(--ink-rgb),.11);border-radius:6px;background:rgba(var(--ink-rgb),.025);cursor:pointer;text-align:left;color:inherit;font:inherit;transition:background .2s,border-color .2s,opacity .25s,box-shadow .2s}
+  .ch3-artist .ch3-artist-mini:hover{background:rgba(73,152,148,.08);border-color:rgba(73,152,148,.35)}
+  .ch3-artist .ch3-artist-mini.is-active{border-color:rgba(73,152,148,.55);background:rgba(73,152,148,.12);box-shadow:inset 0 0 0 1px rgba(73,152,148,.2)}
+  .ch3-artist.has-artist-panel .ch3-artist-mini:not(.is-active){opacity:.42}
+  .ch3-artist .ch3-artist-thumb{width:50px;height:50px;border-radius:5px;object-fit:cover;background:#1a1a1a;grid-row:1/span 2;align-self:center}
+  .ch3-artist .ch3-artist-mini-cap{display:flex;flex-direction:column;gap:.18vh;min-width:0}
+  .ch3-artist .ch3-artist-mini-row{display:flex;align-items:center;justify-content:space-between;gap:.35vw}
+  .ch3-artist .ch3-artist-mini-name{font-family:var(--serif-zh);font-size:max(12px,.9vw);font-weight:600;line-height:1.2}
+  .ch3-artist .ch3-artist-mini-tag{font-family:var(--mono);font-size:7px;letter-spacing:.06em;padding:2px 5px;border-radius:3px;background:color-mix(in srgb,var(--tag,#999) 18%,transparent);color:var(--tag,#666);border:1px solid color-mix(in srgb,var(--tag,#999) 35%,transparent);white-space:nowrap}
+  .ch3-artist .ch3-artist-mini-meta{font-family:var(--mono);font-size:8px;letter-spacing:.04em;opacity:.58}
+  .ch3-artist .ch3-artist-mini-blurb{font-size:max(10px,.76vw);line-height:1.4;opacity:.62;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ch3-artist .ch3-bridge{font-size:max(11px,.84vw)!important;line-height:1.48!important;opacity:.68;margin:0;padding:.55vh 0 0;border-top:1px dashed rgba(var(--ink-rgb),.14);font-style:italic}
+  .ch3-artist .deck-chart.wide{min-height:64vh;flex:1}
+  .ch3-artist .chart-panel-head{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:8px;opacity:1;text-transform:none}
+  .ch3-artist .chart-panel-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+  .ch3-artist .chart-panel-unit{font-family:var(--mono);font-size:9px;letter-spacing:.05em;opacity:.8;color:#555;text-transform:none;line-height:1.35}
+  .ch5-outlier .deck-text{display:flex;flex-direction:column;gap:.65vh;padding-right:1vw;min-height:0}
+  .ch5-outlier .h1-zh{font-size:2.35vw;line-height:1.1;margin-bottom:.25vh}
+  .ch5-outlier .deck-lead-compact{-webkit-line-clamp:3;margin-bottom:.15vh;line-height:1.5!important}
+  .ch5-outlier .ch5-aside{flex:1;display:flex;flex-direction:column;gap:.55vh;margin-top:.5vh;padding-top:.75vh;border-top:1px solid rgba(var(--ink-rgb),.1);min-height:0;overflow:hidden}
+  .ch5-outlier .ch5-aside-head{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;opacity:.42;margin-bottom:.15vh;flex-shrink:0}
+  .ch5-outlier .ch5-radar-wrap{flex:1 1 auto;min-height:200px;max-height:32vh;width:100%;position:relative;margin:.2vh 0}
+  .ch5-outlier .ch5-radar{position:absolute;inset:0;width:100%!important;height:100%!important;min-height:unset;max-height:unset}
+  .ch5-outlier .ch5-outlier-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:.4vw;margin-top:.1vh;flex-shrink:0}
+  .ch5-outlier .ch5-outlier-notes .ch5-hi{font-size:max(10px,.76vw);line-height:1.38;padding:.5vh .4vw;border-left:2px solid #4e79a7;background:rgba(78,121,167,.05);border-radius:0 3px 3px 0}
+  .ch5-outlier .ch5-outlier-notes .ch5-hi strong{display:block;color:#2166ac;font-size:max(11px,.82vw)}
+  .ch5-outlier .ch5-outlier-notes .ch5-hi span{display:block;color:#c44e52;opacity:.72;font-family:var(--mono);font-size:max(9px,.68vw);margin-top:.12vh}
+  .ch5-outlier .ch5-billie-track{display:flex;flex-direction:column;gap:.15vh;width:100%;margin-top:.45vh;padding:.65vh .55vw;border:1px solid rgba(78,121,167,.28);border-radius:6px;background:rgba(78,121,167,.05);cursor:pointer;text-align:left;color:inherit;font:inherit;transition:background .2s,border-color .2s,box-shadow .2s;flex-shrink:0}
+  .ch5-outlier .ch5-billie-track:hover{background:rgba(78,121,167,.1);border-color:rgba(78,121,167,.42)}
+  .ch5-outlier .ch5-billie-track.is-active{border-color:rgba(78,121,167,.55);background:rgba(78,121,167,.12);box-shadow:inset 0 0 0 1px rgba(78,121,167,.16)}
+  .ch5-outlier .ch5-bt-label{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;opacity:.5;color:#4e79a7}
+  .ch5-outlier .ch5-bt-title{font-family:var(--serif-zh);font-size:max(13px,.92vw);font-weight:600;line-height:1.25;color:#2166ac}
+  .ch5-outlier .ch5-bt-artist{font-size:max(10px,.74vw);opacity:.62;line-height:1.3}
+  .ch5-outlier .ch5-bt-play{font-family:var(--mono);font-size:max(9px,.68vw);letter-spacing:.06em;opacity:.55;margin-top:.2vh;color:#4e79a7}
+  .ch5-outlier .chart-panel{padding:12px 14px 10px;overflow:visible}
+  .ch5-outlier .deck-chart.matrix{min-height:70vh}
+  .ch7-style .deck-lead{-webkit-line-clamp:3}
+  .ch7-style .deck-detail{-webkit-line-clamp:2}
+  .ch7-style .ch7-aside{margin-top:.45vh;padding-top:.65vh;border-top:1px solid rgba(var(--ink-rgb),.12);flex-shrink:0;max-height:58vh;overflow:auto}
+  .ch7-style .ch7-aside-head{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;opacity:.45;margin-bottom:.4vh}
+  .ch7-style .ch7-style-list{display:flex;flex-direction:column;gap:.15vh}
+  .ch7-style .ch7-style-card{display:grid;grid-template-columns:8px 1fr;gap:0 .55vw;align-items:start;padding:.5vh 0 .55vh;border-bottom:1px dashed rgba(var(--ink-rgb),.1)}
+  .ch7-style .ch7-style-card:last-child{border-bottom:none;padding-bottom:0}
+  .ch7-style .ch7-style-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:.42vh}
+  .ch7-style .ch7-style-main{min-width:0}
+  .ch7-style .ch7-style-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.25vw .45vw;margin-bottom:.15vh;line-height:1.3}
+  .ch7-style .ch7-style-name{font-weight:600;font-size:max(11px,.82vw);opacity:.9}
+  .ch7-style .ch7-style-tag{font-family:var(--mono);font-size:max(8px,.66vw);letter-spacing:.04em;opacity:.52;white-space:nowrap}
+  .ch7-style .ch7-style-track{font-size:max(10px,.76vw);opacity:.84;line-height:1.38}
+  .ch7-style .ch7-style-pop{font-family:var(--mono);font-size:max(8px,.62vw);opacity:.5;margin-left:.35vw;letter-spacing:.02em}
+  .ch7-style .ch7-style-metrics{font-family:var(--mono);font-size:max(8px,.64vw);opacity:.58;line-height:1.42;margin-top:.1vh;letter-spacing:.01em}
+  .ch7-style .ch7-style-metrics--empty{opacity:.45;font-style:italic}
+  .ch8-emotion .deck-text{display:flex;flex-direction:column;gap:0;min-height:0;max-height:78vh;overflow-y:auto;overflow-x:hidden;padding-right:.35vw;justify-content:flex-start}
+  .ch8-emotion .deck-text::-webkit-scrollbar{width:3px}
+  .ch8-emotion .deck-text::-webkit-scrollbar-thumb{background:rgba(var(--paper-rgb),.18);border-radius:2px}
+  .ch8-emotion .kicker{margin-bottom:.1vh!important;opacity:.55}
+  .ch8-emotion .h1-zh{margin-bottom:.4vh!important;line-height:1.08;font-size:2.35vw!important}
+  .ch8-emotion .deck-lead-ch8{-webkit-line-clamp:unset;display:block;overflow:visible;margin:0 0 .55vh;line-height:1.55!important;opacity:.82;flex-shrink:0;font-size:max(12px,.88vw)!important}
+  .ch8-emotion .deck-detail-ch8{-webkit-line-clamp:unset;display:block;overflow:visible;margin:0 0 .65vh;line-height:1.52!important;opacity:.68;flex-shrink:0;font-size:max(12px,.86vw)!important}
+  .ch8-emotion .ch8-emotion-panel{display:flex;flex-direction:column;gap:.55vh;margin-top:.1vh;flex-shrink:0;width:100%}
+  .ch8-emotion .ch8-aside-hint{margin:0;font-family:var(--mono);font-size:max(8px,.68vw);letter-spacing:.04em;opacity:.46;line-height:1.42;flex-shrink:0}
+  .ch8-emotion .ch8-aside{display:none;flex-direction:column;gap:.85vh;flex-shrink:0;width:100%;padding:1.15vh .95vw 1vh;border:1px solid rgba(var(--paper-rgb),.16);border-radius:10px;background:rgba(0,0,0,.24);overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.22)}
+  .ch8-emotion .ch8-aside.is-visible{display:flex}
+  .ch8-emotion .ch8-viz-wrap{position:relative;flex-shrink:0;width:100%;border-radius:8px;overflow:hidden;min-height:22vh}
+  .ch8-emotion .ch8-viz{position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(var(--paper-rgb),.14);background:rgba(0,0,0,.25);line-height:0;height:100%;min-height:22vh}
+  .ch8-emotion .ch8-viz svg{display:block;width:100%;height:100%;min-height:22vh;max-height:26vh;object-fit:cover}
+  .ch8-emotion .ch8-viz--fallback{min-height:22vh;max-height:26vh;background:linear-gradient(135deg,rgba(78,121,167,.15),rgba(0,0,0,.35))}
+  .ch8-emotion .ch8-viz-cap{position:absolute;left:.65vw;bottom:.55vh;font-family:var(--mono);font-size:max(9px,.72vw);letter-spacing:.1em;text-transform:uppercase;color:rgba(158,197,232,.92);opacity:.95;pointer-events:none;line-height:1.25;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+  .ch8-emotion .ch8-track-play{display:flex;flex-direction:column;gap:.22vh;width:100%;padding:1.1vh .9vw;border:1px solid rgba(78,121,167,.36);border-radius:8px;background:rgba(78,121,167,.09);cursor:pointer;text-align:left;color:inherit;font:inherit;transition:background .2s,border-color .2s,box-shadow .2s;flex-shrink:0}
+  .ch8-emotion .ch8-track-play:hover{background:rgba(78,121,167,.15);border-color:rgba(78,121,167,.52)}
+  .ch8-emotion .ch8-track-play.is-active{border-color:rgba(158,197,232,.55);background:rgba(78,121,167,.18);box-shadow:inset 0 0 0 1px rgba(78,121,167,.24)}
+  .ch8-emotion .ch8-tp-label{font-family:var(--mono);font-size:max(8px,.64vw);letter-spacing:.12em;text-transform:uppercase;opacity:.5;color:#9ec5e8;line-height:1.2}
+  .ch8-emotion .ch8-tp-title{font-family:var(--serif-zh);font-size:max(20px,1.42vw);font-weight:600;line-height:1.18;font-style:italic;margin-top:.12vh}
+  .ch8-emotion .ch8-tp-artist{font-size:max(12px,.88vw);opacity:.58;line-height:1.34;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:.08vh}
+  .ch8-emotion .ch8-tp-metrics{font-family:var(--mono);font-size:max(11px,.82vw);letter-spacing:.03em;color:#9ec5e8;opacity:.82;margin-top:.28vh;line-height:1.25}
+  .ch8-emotion .ch8-tp-play{font-family:var(--mono);font-size:max(11px,.82vw);letter-spacing:.06em;opacity:.62;margin-top:.15vh;color:#9ec5e8;line-height:1.2}
+  .ch8-emotion .ch8-anchor-note{margin:0;font-size:max(13px,.94vw);line-height:1.52;opacity:.74;flex-shrink:0}
+  .ch8-emotion .ch8-anchor-note strong{color:#9ec5e8;font-weight:600}
+  .ch8-emotion .ch8-aside-foot{margin-top:.1vh;padding-top:.4vh;border-top:1px solid rgba(var(--paper-rgb),.1);font-family:var(--mono);font-size:max(8px,.62vw);letter-spacing:.14em;text-transform:uppercase;text-align:center;opacity:.34;line-height:1.2;flex-shrink:0}
+  .ch8-emotion .chart-panel{padding:12px 14px 10px}
+  .ch8-emotion .deck-chart{min-height:68vh}
+  .ch9-explicit .deck-text{display:flex;flex-direction:column;gap:1.25vh;min-height:0;max-height:76vh;overflow:hidden;padding-right:.5vw}
+  .ch9-explicit .deck-lead-compact{-webkit-line-clamp:3;margin-bottom:.35vh;line-height:1.62!important;flex-shrink:0}
+  .ch9-explicit .ch9-explicit-aside{flex:1;display:flex;flex-direction:column;gap:1vh;margin-top:.55vh;min-height:0;overflow:visible;padding-right:.15vw}
+  .ch9-explicit .ch9-aside-label{font-family:var(--mono);font-size:max(8px,.66vw);letter-spacing:.12em;text-transform:uppercase;opacity:.42;margin-bottom:.2vh;flex-shrink:0}
+  .ch9-explicit .ch9-peak-cards{display:flex;flex-direction:column;gap:.85vh;flex:1;justify-content:flex-start;padding:.25vh 0}
+  .ch9-explicit .ch9-peak-card{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;gap:.22vh .65vw;padding:1vh .75vw;border:1px solid color-mix(in srgb,var(--ch9-accent,#4e79a7) 28%,transparent);border-radius:8px;background:color-mix(in srgb,var(--ch9-accent,#4e79a7) 6%,transparent);flex-shrink:0;cursor:pointer;opacity:.42;transition:opacity .32s,background .28s,border-color .28s,box-shadow .28s,transform .28s}
+  .ch9-explicit .ch9-peak-card .ch9-peak-count,
+  .ch9-explicit .ch9-peak-card .ch9-peak-meta,
+  .ch9-explicit .ch9-peak-card .ch9-peak-note{opacity:0;max-height:0;overflow:hidden;margin:0;padding:0;line-height:0;transition:opacity .28s,max-height .28s}
+  .ch9-explicit .ch9-peak-card.is-active{opacity:1!important;border-color:color-mix(in srgb,var(--ch9-accent,#4e79a7) 58%,transparent);background:color-mix(in srgb,var(--ch9-accent,#4e79a7) 16%,transparent);box-shadow:0 3px 16px color-mix(in srgb,var(--ch9-accent,#4e79a7) 22%,transparent);transform:translateX(4px)}
+  .ch9-explicit .ch9-peak-card.is-active .ch9-peak-count,
+  .ch9-explicit .ch9-peak-card.is-active .ch9-peak-meta,
+  .ch9-explicit .ch9-peak-card.is-active .ch9-peak-note{opacity:1;max-height:8vh;line-height:inherit}
+  .ch9-explicit .ch9-peak-genre{font-weight:600;font-size:max(12px,.88vw);color:var(--ch9-accent,#4e79a7);grid-column:1;grid-row:1;line-height:1.3}
+  .ch9-explicit .ch9-peak-count{font-family:var(--serif-zh);font-size:max(21px,1.5vw);font-weight:700;line-height:1.05;color:var(--ch9-accent,#4e79a7);grid-column:2;grid-row:1/3;align-self:center;transition:opacity .28s,max-height .28s}
+  .ch9-explicit .ch9-peak-card.is-active .ch9-peak-count{font-size:max(24px,1.72vw)}
+  .ch9-explicit .ch9-peak-meta{font-family:var(--mono);font-size:max(8px,.66vw);letter-spacing:.04em;opacity:.52;grid-column:1;grid-row:2;transition:opacity .28s,max-height .28s}
+  .ch9-explicit .ch9-peak-note{font-size:max(10px,.78vw);opacity:.78;line-height:1.48;grid-column:1/3;grid-row:3;margin-top:.2vh;transition:opacity .28s,max-height .28s}
+  .ch9-explicit .ch9-aside-hint{margin:.55vh 0 0;font-family:var(--mono);font-size:max(9px,.7vw);letter-spacing:.04em;opacity:.44;line-height:1.5;flex-shrink:0}
+  .ch9-explicit .chart-panel{padding:12px 14px 14px;overflow:visible}
+  .ch9-explicit .chart-panel-head.ch9-chart-head{flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;opacity:1;text-transform:none}
+  .ch9-explicit .chart-panel-head-col{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;flex:1}
+  .ch9-explicit .chart-panel-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+  .ch9-explicit .chart-panel-unit{font-family:var(--mono);font-size:9px;letter-spacing:.04em;opacity:.78;color:#555;text-transform:none;line-height:1.4;max-width:100%}
+  .ch9-explicit .ch9-bubble-legend{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;padding-top:1px}
+  .ch9-explicit .ch9-bl-caption{font-family:var(--mono);font-size:7px;letter-spacing:.04em;color:#888;line-height:1.2;white-space:nowrap}
+  .ch9-explicit .ch9-bl-steps{display:flex;align-items:center;gap:5px}
+  .ch9-explicit .ch9-bl-item{display:inline-flex;align-items:center;gap:2px;font-family:var(--mono);font-size:7px;color:#666;line-height:1}
+  .ch9-explicit .ch9-bl-dot{width:var(--s,8px);height:var(--s,8px);border-radius:50%;background:#888;opacity:.42;flex-shrink:0;display:inline-block}
+  .ch9-explicit .deck-chart.facet{min-height:66vh;padding-bottom:4px}
+  .ch10-paradox .deck-text{display:flex;flex-direction:column;gap:1.1vh;min-height:0;max-height:76vh;overflow:hidden;padding-right:.5vw}
+  .ch10-paradox .deck-lead-compact{-webkit-line-clamp:2;margin-bottom:.35vh;line-height:1.58!important;flex-shrink:0}
+  .ch10-paradox .ch10-paradox-aside{flex:1;display:flex;flex-direction:column;gap:.85vh;margin-top:.45vh;min-height:0;overflow:auto;padding-right:.2vw}
+  .ch10-paradox .ch10-paradox-aside::-webkit-scrollbar{width:3px}
+  .ch10-paradox .ch10-paradox-aside::-webkit-scrollbar-thumb{background:rgba(var(--paper-rgb),.18);border-radius:2px}
+  .ch10-paradox .ch10-paradox-cards{display:flex;flex-direction:column;gap:.78vh;flex-shrink:0}
+  .ch10-paradox .ch10-paradox-card{display:flex;flex-direction:column;gap:.28vh;padding:.95vh .72vw;border:1px solid color-mix(in srgb,var(--ch10-accent,#ff9d9a) 32%,transparent);border-radius:8px;background:color-mix(in srgb,var(--ch10-accent,#ff9d9a) 7%,transparent);flex-shrink:0;cursor:pointer;opacity:.42;transition:opacity .32s,background .28s,border-color .28s,box-shadow .28s,transform .28s}
+  .ch10-paradox .ch10-paradox-card .ch10-paradox-pct,
+  .ch10-paradox .ch10-paradox-card .ch10-paradox-note,
+  .ch10-paradox .ch10-paradox-card .ch10-paradox-compare{opacity:0;max-height:0;overflow:hidden;margin:0;padding:0;line-height:0;transition:opacity .28s,max-height .28s}
+  .ch10-paradox .ch10-paradox-card.is-active{opacity:1!important;border-color:color-mix(in srgb,var(--ch10-accent,#ff9d9a) 55%,transparent);background:color-mix(in srgb,var(--ch10-accent,#ff9d9a) 15%,transparent);box-shadow:0 3px 16px color-mix(in srgb,var(--ch10-accent,#ff9d9a) 20%,transparent);transform:translateX(4px)}
+  .ch10-paradox .ch10-paradox-card.is-active .ch10-paradox-pct,
+  .ch10-paradox .ch10-paradox-card.is-active .ch10-paradox-note,
+  .ch10-paradox .ch10-paradox-card.is-active .ch10-paradox-compare{opacity:1;max-height:12vh;line-height:inherit}
+  .ch10-paradox .ch10-paradox-kicker{font-family:var(--mono);font-size:max(7px,.58vw);letter-spacing:.12em;text-transform:uppercase;color:var(--ch10-accent,#ff9d9a);opacity:.88;line-height:1.35}
+  .ch10-paradox .ch10-paradox-pct{font-family:var(--serif-zh);font-size:max(22px,1.55vw);font-weight:700;line-height:1.1;color:var(--ch10-accent,#ff9d9a);transition:opacity .28s,max-height .28s}
+  .ch10-paradox .ch10-paradox-card.is-active .ch10-paradox-pct{font-size:max(26px,1.85vw)}
+  .ch10-paradox .ch10-paradox-note{font-size:max(10px,.78vw);opacity:.78;line-height:1.48;transition:opacity .28s,max-height .28s}
+  .ch10-paradox .ch10-paradox-compare{font-family:var(--mono);font-size:max(8px,.66vw);letter-spacing:.03em;opacity:.52;margin-top:.15vh;line-height:1.4;transition:opacity .28s,max-height .28s}
+  .ch10-paradox .ch10-aside-hint{margin:.55vh 0 0;font-family:var(--mono);font-size:max(9px,.7vw);letter-spacing:.04em;opacity:.44;line-height:1.5;flex-shrink:0}
+  .ch10-paradox .chart-panel{padding:12px 14px 12px}
+  .ch10-paradox .chart-panel-head{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:6px;opacity:1;text-transform:none}
+  .ch10-paradox .chart-panel-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+  .ch10-paradox .chart-panel-unit{font-family:var(--mono);font-size:9px;letter-spacing:.05em;opacity:.75;color:#555;text-transform:none;line-height:1.35}
+  .ch10-paradox .deck-chart.ratio{min-height:66vh}
+  #genre-showcase{position:fixed;left:0;bottom:10vh;top:auto;z-index:185;width:min(300px,32vw);max-height:58vh;overflow:auto;overflow-x:hidden;background:var(--paper);color:var(--ink);border:1px solid rgba(var(--ink-rgb),.1);border-left:none;border-radius:0 10px 10px 0;box-shadow:8px 0 40px rgba(0,0,0,.18);transform:translateX(-108%);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s;opacity:0;pointer-events:none}
+  #genre-showcase.is-visible{transform:translateX(0);opacity:1;pointer-events:auto}
+  #genre-showcase .gs-close{position:absolute;top:.6vh;right:.5vw;z-index:2;background:rgba(0,0,0,.35);border:none;color:#fff;font-size:18px;line-height:1;width:28px;height:28px;border-radius:50%;cursor:pointer;opacity:.85}
+  #genre-showcase .gs-img-wrap{height:22vh;min-height:130px;background:#1a1a1a center/cover no-repeat}
+  #genre-showcase .gs-cap{padding:1.4vh 1.1vw 1.6vh}
+  #genre-showcase .gs-name{font-family:var(--serif-zh);font-size:max(18px,1.25vw);font-weight:600;line-height:1.2}
+  #genre-showcase .gs-stats{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-top:.5vh}
+  #genre-showcase .gs-track{font-family:var(--serif-zh);font-size:max(12px,.88vw);line-height:1.4;opacity:.85;margin-top:.5vh;color:#499894}
+  #genre-showcase .gs-blurb{font-size:max(12px,.85vw);line-height:1.5;opacity:.78;margin-top:.7vh}
+  #genre-showcase .gs-story{font-size:max(11px,.82vw);line-height:1.5;opacity:.72;margin-top:.8vh;padding-top:.8vh;border-top:1px solid rgba(var(--ink-rgb),.1)}
+  #genre-showcase .gs-story-head{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.5;margin-bottom:.35vh}
+  #genre-showcase.gs-mode-playlist{width:min(320px,34vw);max-height:62vh}
+  #genre-showcase .gs-playlist{display:none;margin-top:.6vh;max-height:42vh;overflow-y:auto;padding-right:.3vw}
+  #genre-showcase.gs-mode-playlist .gs-playlist{display:block}
+  #genre-showcase .gs-pl-item{display:block;width:100%;text-align:left;padding:.65vh .55vw;margin-bottom:.4vh;border:1px solid rgba(var(--ink-rgb),.12);background:transparent;color:inherit;cursor:pointer;border-radius:4px;transition:background .2s,border-color .2s}
+  #genre-showcase .gs-pl-item:hover,#genre-showcase .gs-pl-item.is-active{background:rgba(73,152,148,.14);border-color:rgba(73,152,148,.5)}
+  #genre-showcase .gs-pl-item.is-loading{opacity:.65;pointer-events:wait}
+  #genre-showcase .gs-pl-main{display:flex;align-items:center;justify-content:space-between;gap:.5vw}
+  #genre-showcase .gs-pl-genre{font-family:var(--serif-zh);font-size:max(13px,.92vw);font-weight:600;line-height:1.25;color:var(--ink)}
+  #genre-showcase .gs-pl-meta{display:block;font-size:max(10px,.78vw);opacity:.55;margin-top:.25vh;line-height:1.35}
+  #genre-showcase .gs-pl-count{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.08em;opacity:.4;margin-top:.15vh}
+  #artist-showcase{position:fixed;left:max(1.4vw,12px);top:50%;bottom:auto;z-index:186;width:min(288px,calc(36vw - 1rem));max-height:min(66vh,620px);overflow:auto;background:var(--paper);color:var(--ink);border:1px solid rgba(var(--ink-rgb),.12);border-radius:0 10px 10px 0;box-shadow:8px 0 40px rgba(0,0,0,.2);transform:translate(-108%,-50%);transition:transform .48s cubic-bezier(.22,1,.36,1),opacity .35s;opacity:0;pointer-events:none}
+  #artist-showcase.is-visible{transform:translate(0,-50%);opacity:1;pointer-events:auto}
+  #artist-showcase .as-close{position:absolute;top:.6vh;right:.5vw;z-index:3;background:rgba(0,0,0,.45);border:none;color:#fff;font-size:18px;line-height:1;width:28px;height:28px;border-radius:50%;cursor:pointer;opacity:.9}
+  #artist-showcase .as-hero{position:relative;min-height:128px;background:var(--as-accent,#499894) center/cover no-repeat;overflow:hidden}
+  #artist-showcase .as-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%}
+  #artist-showcase .as-hero-cap{position:relative;z-index:1;padding:3.8vh 1.1vw 1.2vh;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.72) 100%)}
+  #artist-showcase .as-name{font-family:var(--serif-zh);font-size:max(18px,1.25vw);font-weight:600;line-height:1.2;color:#fff;margin:0}
+  #artist-showcase .as-genre{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.8;color:#fff;margin-top:.35vh}
+  #artist-showcase .as-cap{padding:1.2vh 1.1vw 1.5vh}
+  #artist-showcase .as-stats{font-family:var(--mono);font-size:9px;letter-spacing:.08em;opacity:.6;line-height:1.45}
+  #artist-showcase .as-event{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;opacity:.45;margin-top:.6vh}
+  #artist-showcase .as-story{font-size:max(12px,.85vw);line-height:1.55;opacity:.78;margin-top:.5vh}
+  #artist-showcase .as-track-play{display:block;width:100%;margin-top:.9vh;padding:.65vh .5vw;border:1px solid rgba(73,152,148,.45);background:rgba(73,152,148,.1);color:inherit;border-radius:4px;cursor:pointer;font-family:var(--serif-zh);font-size:max(12px,.88vw);text-align:left;transition:background .2s}
+  #artist-showcase .as-track-play:hover{background:rgba(73,152,148,.18)}
+  #music-bar{position:fixed;right:2.2vw;bottom:2.2vh;transform:translateY(120%);width:min(340px,42vw);z-index:200;background:rgba(var(--ink-rgb),.94);color:var(--paper);border:1px solid rgba(var(--paper-rgb),.15);padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:start;transition:transform .45s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(12px);border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  #music-bar.is-visible{transform:translateY(0)}
+  .mp-track{font-family:var(--serif-zh);font-size:14px;line-height:1.25;grid-column:1}
+  .mp-artist{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-top:2px;grid-column:1}
+  .mp-mode{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.4;grid-column:1;margin-top:2px}
+  .mp-actions{display:flex;gap:6px;grid-column:2;grid-row:1/3}
+  .mp-btn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(var(--paper-rgb),.3);color:inherit;padding:4px 8px;cursor:pointer;border-radius:4px}
+  #music-audio,#music-spotify{display:none}
+  #music-spotify{width:100%;height:72px;border:none;border-radius:6px}
+  #music-spotify:not(.hidden){display:block;grid-column:1/-1}
+  #music-bar:has(#music-spotify:not(.hidden)){grid-template-rows:auto auto auto}
+  .ch2-trend .deck-text{gap:1.1vh;line-height:1.58}
+  .ch2-trend .h1-zh{margin-bottom:.35vh}
+  .ch2-trend .gt-narrative{min-height:2.8em;margin-bottom:.15vh;line-height:1.62!important;opacity:1;transform:translateY(0);transition:opacity .32s ease,transform .32s ease}
+  .ch2-trend .gt-narrative.is-changing{opacity:0;transform:translateY(8px)}
+  .ch2-trend .gt-narrative.is-enter{opacity:1;transform:translateY(0)}
+  .ch2-trend .deck-lead{-webkit-line-clamp:unset;display:block;overflow:visible}
+  .ch2-trend .genre-trend-sidebar{margin-top:.65vh;padding-top:.15vh;display:flex;flex-direction:column;gap:.55vh;min-height:0;flex:1;position:relative;z-index:5;pointer-events:auto}
+  .ch2-trend .genre-trend-sidebar.is-intro-disabled{opacity:.65}
+  .ch2-trend .gt-sidebar-hint{font-family:var(--mono);font-size:max(8px,.64vw);letter-spacing:.1em;opacity:.48;margin:0 0 .15vh}
+  .ch2-trend .genre-trend-notes{display:flex;flex-direction:column;gap:.55vh;pointer-events:auto}
+  .ch2-trend .gt-note{display:block;width:100%;padding:.58vh .48vw;border:none;border-left:3px solid rgba(127,127,127,.4);background:rgba(127,127,127,.06);border-radius:0 4px 4px 0;font-size:max(11px,.76vw);line-height:1.45;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:background .2s,box-shadow .2s,border-color .2s,opacity .2s}
+  .ch2-trend .gt-note:hover:not(:disabled){filter:brightness(1.06)}
+  .ch2-trend .gt-note--y2005{border-left-color:#c9a227;background:rgba(201,162,39,.09)}
+  .ch2-trend .gt-note--y2005:hover:not(:disabled){background:rgba(201,162,39,.14)}
+  .ch2-trend .gt-note--y2005.is-active{border-left-color:#a8841a;background:rgba(201,162,39,.18);box-shadow:inset 0 0 0 1px rgba(201,162,39,.28)}
+  .ch2-trend .gt-note--y2016{border-left-color:#499894;background:rgba(73,152,148,.09)}
+  .ch2-trend .gt-note--y2016:hover:not(:disabled){background:rgba(73,152,148,.14)}
+  .ch2-trend .gt-note--y2016.is-active{border-left-color:#3a7a76;background:rgba(73,152,148,.18);box-shadow:inset 0 0 0 1px rgba(73,152,148,.28)}
+  .ch2-trend .gt-note--y2020{border-left-color:#c97b6d;background:rgba(201,123,109,.09)}
+  .ch2-trend .gt-note--y2020:hover:not(:disabled){background:rgba(201,123,109,.14)}
+  .ch2-trend .gt-note--y2020.is-active{border-left-color:#b85c4f;background:rgba(201,123,109,.18);box-shadow:inset 0 0 0 1px rgba(201,123,109,.28)}
+  .ch2-trend .gt-note--y2024{border-left-color:#4e79a7;background:rgba(78,121,167,.1)}
+  .ch2-trend .gt-note--y2024:hover:not(:disabled){background:rgba(78,121,167,.15)}
+  .ch2-trend .gt-note--y2024.is-active{border-left-color:#3d6289;background:rgba(78,121,167,.2);box-shadow:inset 0 0 0 1px rgba(78,121,167,.32)}
+  .ch2-trend .gt-note--peak .gt-note-label{color:#9ec5e8}
+  .ch2-trend .gt-note:disabled{opacity:.5;cursor:default}
+  .ch2-trend .gt-note-year{font-family:var(--mono);font-size:max(7px,.58vw);letter-spacing:.12em;opacity:.52;display:block}
+  .ch2-trend .gt-note-label{font-family:var(--serif-zh);font-weight:600;display:block;margin:.12vh 0}
+  .ch2-trend .gt-note-story{opacity:.76;margin:0;font-size:max(9px,.72vw);line-height:1.38;display:block}
+  .ch2-trend .deck-chart.wide{min-height:64vh;flex:1;overflow:visible}
+  .ch2-trend .chart-panel{overflow:visible}
+  .ch2-trend .chart-panel-head{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:8px;opacity:1;text-transform:none}
+  .ch2-trend .chart-panel-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+  .ch2-trend .chart-panel-unit{font-family:var(--mono);font-size:10px;letter-spacing:.05em;opacity:.85;color:#555;text-transform:none;line-height:1.35}
+
+</style>
+</head>
+<body>
+<script>
+  (function(){
+    const KEY = 'guizang-ppt-low-power';
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const stored = localStorage.getItem(KEY);
+    window.__lowPowerMode = stored === '1' || (stored === null && reduced);
+    function updateHint(){
+      const hint = document.getElementById('hint');
+      if(hint) hint.textContent = `← → 翻页 · B ${window.__lowPowerMode ? '动态' : '静态'} · ESC 索引`;
+    }
+    window.__setLowPowerMode = function(on, opts={}){
+      window.__lowPowerMode = !!on;
+      document.body.classList.toggle('low-power', window.__lowPowerMode);
+      if(opts.persist !== false) localStorage.setItem(KEY, window.__lowPowerMode ? '1' : '0');
+      if(window.__lowPowerMode && document.getAnimations){
+        document.getAnimations().forEach(a=>a.cancel());
+      }
+      updateHint();
+      dispatchEvent(new CustomEvent('ppt-low-power-change', {detail:{on:window.__lowPowerMode}}));
+      if(window.__playSlide) window.__playSlide(window.__currentSlideIndex || 0);
+    };
+    document.body.classList.toggle('low-power', window.__lowPowerMode);
+    addEventListener('DOMContentLoaded', updateHint, {once:true});
+  })();
+</script>
+
+<canvas id="bg-dark" class="bg"></canvas>
+<canvas id="bg-light" class="bg"></canvas>
+<div id="hint">← → 翻页 · B 静态 · ESC 索引</div>
+
+<div id="deck">
+
+<!-- ============================================================
+     SLIDES 插入区 · 在此处填充所有 <section class="slide ..."> 页面
+     每页模板参考 references/page-patterns.md
+     页面组件参考 references/components.md
+     ============================================================ -->
+
+
+<section class="slide hero dark" data-slide="0">
+  <div class="chrome"><div>Spotify Top 10,000 · 情绪脉动</div><div>01 / 12</div></div>
+  <div class="frame" style="display:grid;gap:3.2vh;align-content:center;min-height:78vh">
+    <div class="kicker" data-anim>Data Visualization · Final Project</div>
+    <h1 class="display-zh" data-anim>10,000次心跳的采样</h1>
+    <h2 class="h2-zh" data-anim style="opacity:.88">全球数字音乐的「情绪脉动」报告</h2>
+    <p class="lead" style="max-width:64vw" data-anim>
+      基于 Spotify 全球 Top 10,000 热门歌曲数据集，以 Tableau 工作簿为视觉基准，
+      复刻 10 组交互图表，讲述从<strong>流派王权交替</strong>到<strong>情绪象限</strong>、
+      从<strong>黄金公式</strong>到<strong>文化反叛</strong>的完整数据叙事。
+    </p>
+  </div>
+  <div class="foot"><div>点击播放 · ← → 翻页</div><div>2026</div></div>
+</section>
+
+<section class="slide light split-slide ch1-genre" data-chart="genre_market" data-chart-id="chart-1" data-slide="1">
+  <div class="chrome"><div>Act I · 宏观流派</div><div>02 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 1 章</div>
+      <h2 class="h1-zh" data-anim>王权交替</h2>
+      <p class="body-zh deck-lead" data-anim>纵观整个 2024 年音乐流派的市场占有率，<strong>Pop（流行乐）</strong>以绝对优势高居第一，<strong>Rock（摇滚乐）</strong>稳居第二。然而，这两个流派的命运曲线在历史的长河中发生过一次历史性的「王权交替」。</p>
+      
+      <div class="ch1-aside">
+        <p class="ch1-hint">点击玫瑰图扇区 · 播放代表曲 · 点击空白处停止</p>
+        <div class="ch1-stats-head">2024 · Top 5 流派曲目数</div>
+        <div class="ch1-stats"><div class="ch1-stat"><span class="ch1-stat-swatch" style="background:#499894"></span><span class="ch1-stat-main"><span class="ch1-stat-genre">Pop</span><span class="ch1-stat-val">4,469 首</span></span><span class="ch1-stat-pct">28.1%</span></div><div class="ch1-stat"><span class="ch1-stat-swatch" style="background:#ff9d9a"></span><span class="ch1-stat-main"><span class="ch1-stat-genre">Rock</span><span class="ch1-stat-val">2,417 首</span></span><span class="ch1-stat-pct">15.2%</span></div><div class="ch1-stat"><span class="ch1-stat-swatch" style="background:#79706e"></span><span class="ch1-stat-main"><span class="ch1-stat-genre">HipHop</span><span class="ch1-stat-val">2,294 首</span></span><span class="ch1-stat-pct">14.4%</span></div><div class="ch1-stat"><span class="ch1-stat-swatch" style="background:#8cd17d"></span><span class="ch1-stat-main"><span class="ch1-stat-genre">Latin</span><span class="ch1-stat-val">1,916 首</span></span><span class="ch1-stat-pct">12.1%</span></div><div class="ch1-stat"><span class="ch1-stat-swatch" style="background:#86bcb6"></span><span class="ch1-stat-main"><span class="ch1-stat-genre">R&amp;B</span><span class="ch1-stat-val">1,312 首</span></span><span class="ch1-stat-pct">8.3%</span></div></div>
+        <p class="ch1-footnote">长尾 12+ 流派归入 Other · 数据集共 15,895 首</p>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>流派市场占有率</span>
+        <span>点击数据点 · 查看故事解读</span>
+      </div>
+      <div id="chart-1" class="deck-chart "></div>
+    </div>
+  </div>
+  <div class="foot"><div>流派市场占有率</div><div>Genre Market</div></div>
+</section>
+
+<section class="slide dark split-slide ch2-trend" data-chart="genre_trend" data-chart-id="chart-2" data-slide="2">
+  <div class="chrome"><div>Act II · 历史趋势</div><div>03 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 2 章</div>
+      <h2 class="h1-zh" data-anim>Pop 反超 Rock</h2>
+      <p class="body-zh deck-lead gt-narrative is-enter" data-anim>在 2000 年代初，Rock 依然是最受欢迎的流派。</p>
+      
+      
+      <div class="genre-trend-sidebar">
+        <p class="gt-sidebar-hint">点击时间节点 · 右侧图表联动 · 上方字幕切换</p>
+        <div class="genre-trend-notes" id="genre-trend-notes" aria-live="polite"></div>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span class="chart-panel-title">流派受欢迎程度变化趋势</span>
+        <span class="chart-panel-unit">单位：Popularity 年度合计（K = 千分）</span>
+      </div>
+      <div id="chart-2" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>流派受欢迎程度变化趋势</div><div>Genre Trend</div></div>
+</section>
+
+<section class="slide light split-slide ch3-artist" data-chart="artist_scatter" data-chart-id="chart-3" data-slide="3">
+  <div class="chrome"><div>Act III · 顶流艺人</div><div>04 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 3 章</div>
+      <h2 class="h1-zh" data-anim>顶流镜像</h2>
+      <p class="body-zh deck-lead" data-anim>当我们将目光从宏观流派拉近到微观艺人时，发现了一个极其有趣的现象：<strong>顶流艺人的热度轨迹，正是流派繁荣的完美镜像。</strong></p>
+      
+      
+      
+      <div class="ch3-aside">
+        <div class="ch3-aside-head">代表性顶流 · 点击卡片或图表气泡</div>
+        <div class="ch3-artist-list"><button type="button" class="ch3-artist-mini" data-artist="Taylor Swift"><img class="ch3-artist-thumb" src="images/artists/Taylor_Swift.jpg" alt="Taylor Swift" loading="lazy"><span class="ch3-artist-mini-cap"><span class="ch3-artist-mini-row"><span class="ch3-artist-mini-name">Taylor Swift</span><span class="ch3-artist-mini-tag" style="--tag:#499894">Pop</span></span><span class="ch3-artist-mini-meta">16.07B 粉 · 10.80K 热</span><span class="ch3-artist-mini-blurb">16,074M+ 粉丝 · Pop 代言人，《The Eras Tour》将流媒体热度推…</span></span></button><button type="button" class="ch3-artist-mini" data-artist="Bad Bunny"><img class="ch3-artist-thumb" src="images/artists/Bad_Bunny.jpg" alt="Bad Bunny" loading="lazy"><span class="ch3-artist-mini-cap"><span class="ch3-artist-mini-row"><span class="ch3-artist-mini-name">Bad Bunny</span><span class="ch3-artist-mini-tag" style="--tag:#8cd17d">Latin</span></span><span class="ch3-artist-mini-meta">5.28B 粉 · 4.95K 热</span><span class="ch3-artist-mini-blurb">Latin 全球逆袭的旗手，西语流行打破英语中心主义。</span></span></button><button type="button" class="ch3-artist-mini" data-artist="Drake"><img class="ch3-artist-thumb" src="images/artists/Drake.jpg" alt="Drake" loading="lazy"><span class="ch3-artist-mini-cap"><span class="ch3-artist-mini-row"><span class="ch3-artist-mini-name">Drake</span><span class="ch3-artist-mini-tag" style="--tag:#79706e">HipHop</span></span><span class="ch3-artist-mini-meta">4.64B 粉 · 4.31K 热</span><span class="ch3-artist-mini-blurb">HipHop 山巅之一，多伦多说唱与 R&amp;B 旋律的混合体。</span></span></button><button type="button" class="ch3-artist-mini" data-artist="Playboi Carti"><img class="ch3-artist-thumb" src="images/artists/Playboi_Carti.jpg" alt="Playboi Carti" loading="lazy"><span class="ch3-artist-mini-cap"><span class="ch3-artist-mini-row"><span class="ch3-artist-mini-name">Playboi Carti</span><span class="ch3-artist-mini-tag" style="--tag:#79706e">HipHop</span></span><span class="ch3-artist-mini-meta">542M 粉 · 3.12K 热</span><span class="ch3-artist-mini-blurb">HipHop 另一极峰，陷阱与实验人声的代表。</span></span></button></div>
+        <p class="ch3-bridge body-zh">那么大家为什么喜欢听这些歌？有没有一个黄金公式呢？</p>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span class="chart-panel-title">粉丝量与艺人热度</span>
+        <span class="chart-panel-unit">横轴对数 · 纵轴线性 · 淡点=全量艺人（低热区重叠属正常）</span>
+      </div>
+      <div id="chart-3" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>粉丝量与艺人热度</div><div>Artist Mirror</div></div>
+</section>
+
+<section class="slide dark split-slide ch4-golden" data-chart="top100_golden" data-chart-id="chart-4" data-slide="4">
+  <div class="chrome"><div>Act IV · 音频指纹</div><div>05 / 12</div></div>
+  <div class="deck-layout-chart-heavy deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 4 章</div>
+      <h2 class="h1-zh" data-anim>黄金公式</h2>
+      <p class="body-zh deck-lead" data-anim>我们对榜单上 Top 100 的热歌进行了音频物理属性分析，发现能红遍全球的歌曲在四个维度上高度相似：</p>
+      <ul class="deck-bullets body-zh"><li><strong>中速流行/快板高速</strong> — Tempo 120-121 左右</li><li><strong>中高能量</strong> — Energy 0.61-0.64</li><li><strong>标准流媒体强律动</strong> — Danceability 0.62-0.64</li></ul>
+      
+      
+      
+      
+      <div class="ch4-aside">
+        <div class="ch4-aside-head">三层样本 · 对应矩阵列 · 点击试听</div>
+        <div class="ch4-golden-list"><button type="button" class="ch4-golden-track" data-track-id="1cOboCuWYI2osTOfolMRS6" data-artist="Oscar Maydon|Fuerza Regida" data-track="Tu Boda"><span class="ch4-gt-tier">Top 100</span><span class="ch4-gt-title">Tu Boda</span><span class="ch4-gt-artist">Oscar Maydon|Fuerza Regida · TraditionalMusic</span><span class="ch4-gt-metrics">Tempo 113 · Energy 0.65 · Danceability 0.69</span><span class="ch4-gt-meta">#66 · Loud -7.0</span><span class="ch4-gt-play">♪ 点击播放</span></button><button type="button" class="ch4-golden-track" data-track-id="4Dd5XLOdAAmURIZSLThPvH" data-artist="Saindhavi|G. V. Prakash" data-track="Pirai Thedum"><span class="ch4-gt-tier">Middle</span><span class="ch4-gt-title">Pirai Thedum</span><span class="ch4-gt-artist">Saindhavi|G. V. Prakash · Pop</span><span class="ch4-gt-metrics">Tempo 120 · Energy 0.63 · Danceability 0.64</span><span class="ch4-gt-meta">#6901 · Loud -7.0</span><span class="ch4-gt-play">♪ 点击播放</span></button><button type="button" class="ch4-golden-track" data-track-id="23l1kVpqMVREiwU1YAlcr4" data-artist="Elton John" data-track="I Guess That's Why They Call It The Blues"><span class="ch4-gt-tier">Edge</span><span class="ch4-gt-title">I Guess That's Why They Call It The Blues</span><span class="ch4-gt-artist">Elton John · Rock</span><span class="ch4-gt-metrics">Tempo 121 · Energy 0.66 · Danceability 0.67</span><span class="ch4-gt-meta">#9111 · Loud -7.3</span><span class="ch4-gt-play">♪ 点击播放</span></button></div>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Top 100 热歌音频属性</span>
+        <span>矩阵 · 右侧参考带 · 单位见行标/图例</span>
+      </div>
+      <div class="golden-matrix-wrap">
+        <div id="chart-4" class="deck-chart matrix"></div>
+        
+        <aside class="golden-ref-rail" aria-label="参考带图例">
+          <div class="golden-ref-rail-head">参考带</div>
+          <div class="golden-ref-rail-body"><div class="golden-ref-cell golden-ref-dance"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f9f3ef,#f9e3d4,#f3baac)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#f16913">Danceability<span class="golden-ref-unit">0–1</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0</span><span class="golden-ref-lbl">弱律动</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0.4</span><span class="golden-ref-lbl">轻微律动</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0.7</span><span class="golden-ref-lbl">强律动</span></div></div></div></div><div class="golden-ref-cell golden-ref-energy"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f7faf0,#e8edda,#dee8bb)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#238b45">Energy<span class="golden-ref-unit">0–1</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0</span><span class="golden-ref-lbl">低能量</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0.33</span><span class="golden-ref-lbl">中能量</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0.66</span><span class="golden-ref-lbl">高能量</span></div></div></div></div><div class="golden-ref-cell golden-ref-loud"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f0f7fa,#ddebf0,#cbe6f0)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#2171b5">Loud<span class="golden-ref-unit">dB</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-20</span><span class="golden-ref-lbl">低响度</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-12</span><span class="golden-ref-lbl">标准响度</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-6</span><span class="golden-ref-lbl">高响度</span></div></div></div></div><div class="golden-ref-cell golden-ref-tempo"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f0f3fa,#e2e6f0,#d5dbf0)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#6a51a3">Tempo<span class="golden-ref-unit">BPM</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">40</span><span class="golden-ref-lbl">慢板</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">90</span><span class="golden-ref-lbl">中速</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">130</span><span class="golden-ref-lbl">快板</span></div></div></div></div></div>
+          <div class="golden-ref-rail-foot">虚线=分界 · 蓝点=均值</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div>Top 100 热歌音频属性</div><div>Golden Ratio</div></div>
+</section>
+
+<section class="slide light split-slide ch5-outlier" data-chart="top10_golden" data-chart-id="chart-5" data-slide="5">
+  <div class="chrome"><div>Act V · 异类样本</div><div>06 / 12</div></div>
+  <div class="deck-layout-ch5 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 5 章</div>
+      <h2 class="h1-zh" data-anim>异类 Billie</h2>
+      <p class="body-zh deck-lead deck-lead-compact" data-anim>但是，当我们放大到 Top 10 的歌手时，在相似的流行大潮中，却出现了一个巨大的「异类」——<strong>Billie Eilish</strong>。</p>
+      
+      
+      
+      
+      
+      <div class="ch5-aside">
+        <div class="ch5-aside-head">物理指标 · Billie vs Top 100</div>
+        <div class="ch5-radar-wrap">
+          <div id="chart-5-radar" class="ch5-radar"></div>
+        </div>
+        <div class="ch5-outlier-notes">
+          <div class="ch5-hi"><strong>Energy 0.33</strong><span>Top100 0.61</span></div>
+          <div class="ch5-hi"><strong>Loud -11.9</strong><span>Top100 -7.9</span></div>
+          <div class="ch5-hi"><strong>Tempo 117</strong><span>Top100 120</span></div>
+        </div>
+        <button type="button" class="ch5-billie-track"
+          data-track-id="2Fxmhks0bxGSBdJ92vM42m"
+          data-artist="Billie Eilish"
+          data-track="bad guy">
+          <span class="ch5-bt-label">代表曲 · 点击试听</span>
+          <span class="ch5-bt-title">bad guy</span>
+          <span class="ch5-bt-artist">Billie Eilish · Pop</span>
+          <span class="ch5-bt-play">♪ 播放</span>
+        </button>
+      </div>
+      
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Top 10 歌手黄金配比</span>
+        <span>蓝=Billie异类 · 右侧参考带 · 单位见行标</span>
+      </div>
+      <div class="golden-matrix-wrap is-compact">
+        <div id="chart-5" class="deck-chart matrix"></div>
+        
+        <aside class="golden-ref-rail is-compact" aria-label="参考带图例">
+          <div class="golden-ref-rail-head">参考带</div>
+          <div class="golden-ref-rail-body"><div class="golden-ref-cell golden-ref-loud"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f0f7fa,#ddebf0,#cbe6f0)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#2171b5">Loud<span class="golden-ref-unit">dB</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-20</span><span class="golden-ref-lbl">低响度</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-12</span><span class="golden-ref-lbl">标准响度</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#2171b5">-6</span><span class="golden-ref-lbl">高响度</span></div></div></div></div><div class="golden-ref-cell golden-ref-dance"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f9f3ef,#f9e3d4,#f3baac)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#f16913">Danceability<span class="golden-ref-unit">0–1</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0</span><span class="golden-ref-lbl">弱律动</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0.4</span><span class="golden-ref-lbl">轻微律动</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#f16913">0.7</span><span class="golden-ref-lbl">强律动</span></div></div></div></div><div class="golden-ref-cell golden-ref-energy"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f7faf0,#e8edda,#dee8bb)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#238b45">Energy<span class="golden-ref-unit">0–1</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0</span><span class="golden-ref-lbl">低能量</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0.33</span><span class="golden-ref-lbl">中能量</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#238b45">0.66</span><span class="golden-ref-lbl">高能量</span></div></div></div></div><div class="golden-ref-cell golden-ref-tempo"><div class="golden-ref-stripe" style="background:linear-gradient(to bottom,#f0f3fa,#e2e6f0,#d5dbf0)" title="色带分区"></div><div class="golden-ref-body"><div class="golden-ref-metric" style="color:#6a51a3">Tempo<span class="golden-ref-unit">BPM</span></div><div class="golden-ref-items"><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">40</span><span class="golden-ref-lbl">慢板</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">90</span><span class="golden-ref-lbl">中速</span></div><div class="golden-ref-item"><span class="golden-ref-val" style="color:#6a51a3">130</span><span class="golden-ref-lbl">快板</span></div></div></div></div></div>
+          <div class="golden-ref-rail-foot">虚线=分界 · 蓝=Billie异类</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div>Top 10 歌手黄金配比</div><div>Outlier</div></div>
+</section>
+
+<section class="slide dark split-slide ch6-heat" data-chart="top10_heatmap" data-chart-id="chart-6" data-slide="6">
+  <div class="chrome"><div>Act V · 热度轨迹</div><div>07 / 12</div></div>
+  <div class="deck-layout-chart-heavy deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 6 章</div>
+      <h2 class="h1-zh" data-anim>Billie 崛起</h2>
+      <p class="body-zh deck-lead deck-lead-compact" data-anim>Billie 在 <strong>2016 年</strong>带着她的首支单曲杀入战场，粉丝量和热度经历了爆发式增长。</p>
+      
+      
+      
+      
+      
+      
+      <div class="ch6-aside">
+        <div class="ch6-tl-label">Billie Eilish · 发展时间轴</div>
+        <p class="ch6-tl-hint">点击节点 · 联动热力图 · 双击图表空白恢复</p>
+        <div class="ch6-timeline"><div class="ch6-tl-item is-key" data-ch6-year="2016" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2016</span><span class="ch6-tl-title">横空出世</span><span class="ch6-tl-badge">起点</span></div><p class="ch6-tl-text">《Ocean Eyes》爆红 · 签约 Interscope</p></div></div><div class="ch6-tl-item" data-ch6-year="2017" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2017</span><span class="ch6-tl-title">初露锋芒</span></div><p class="ch6-tl-text">首张 EP · Billboard 200 第 14</p></div></div><div class="ch6-tl-item is-key" data-ch6-year="2019" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2019</span><span class="ch6-tl-title">全球爆红</span><span class="ch6-tl-badge">爆发</span></div><p class="ch6-tl-text">首专夺冠 ·《bad guy》Hot 100 登顶</p></div></div><div class="ch6-tl-item" data-ch6-year="2020" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2020</span><span class="ch6-tl-title">格莱美横扫</span></div><p class="ch6-tl-text">18 岁揽五项格莱美 · 最年轻年度专辑</p></div></div><div class="ch6-tl-item" data-ch6-year="2021" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2021</span><span class="ch6-tl-title">奖项延续</span></div><p class="ch6-tl-text">格莱美年度制作 · Bond 主题曲</p></div></div><div class="ch6-tl-item" data-ch6-year="2022" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2022</span><span class="ch6-tl-title">奥斯卡加冕</span></div><p class="ch6-tl-text">《No Time To Die》奥斯卡最佳原创歌曲</p></div></div><div class="ch6-tl-item" data-ch6-year="2024" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2024</span><span class="ch6-tl-title">三专双奖</span></div><p class="ch6-tl-text">《What Was I Made For?》奥斯卡 + 格莱美</p></div></div><div class="ch6-tl-item is-key" data-ch6-year="2025" role="button" tabindex="0"><div class="ch6-tl-marker" aria-hidden="true"></div><div class="ch6-tl-body"><div class="ch6-tl-headline"><span class="ch6-tl-year">2025</span><span class="ch6-tl-title">巅峰持续</span><span class="ch6-tl-badge">当下</span></div><p class="ch6-tl-text">AMA 七项大奖 · 全球巡演至 11 月</p></div></div></div>
+      </div>
+      
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Top 10 歌手热度变化趋势</span>
+        <span>点击 Billie 色块/时间轴 · 按该年均值(分)重排 · 双击空白恢复</span>
+      </div>
+      <div id="chart-6" class="deck-chart heatmap"></div>
+    </div>
+  </div>
+  <div class="foot"><div>Top 10 歌手热度变化趋势</div><div>Heat Trajectory</div></div>
+</section>
+
+<section class="slide light split-slide ch7-style" data-chart="style_distribution" data-chart-id="chart-7" data-slide="7">
+  <div class="chrome"><div>Act VI · 风格光谱</div><div>08 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 7 章</div>
+      <h2 class="h1-zh" data-anim>五种风格</h2>
+      <p class="body-zh deck-lead" data-anim>再让我们选出 5 种不同风格的代表歌手：暗黑电子流行 Billie、新金属 Linkin Park、日式流行摇滚 Mrs. GREEN APPLE、乡村流行 Taylor、复古 R&B The Weeknd。</p>
+      <p class="body-zh deck-detail" data-anim>如果想在这几个领域深耕，达到领衔水平，不妨模仿这几位代表歌手斩获高分的歌曲的音频特征。</p>
+      
+      
+      
+      
+      
+      
+      
+      <div class="ch7-aside">
+        <div class="ch7-aside-head">五位代表 · 最热曲目 · 物理指标</div>
+        <div class="ch7-style-list"><div class="ch7-style-card"><span class="ch7-style-dot" style="background:#4e79a7"></span><div class="ch7-style-main"><div class="ch7-style-head"><span class="ch7-style-name">Billie Eilish</span><span class="ch7-style-tag">暗黑电子流行</span></div><div class="ch7-style-track" title="BIRDS OF A FEATHER">♪ BIRDS OF A FEATHER<span class="ch7-style-pop">Pop 98</span></div><div class="ch7-style-metrics">Danceability 0.75 · Energy 0.51 · Tempo 105 · Loud -10.2</div></div></div><div class="ch7-style-card"><span class="ch7-style-dot" style="background:#59a14f"></span><div class="ch7-style-main"><div class="ch7-style-head"><span class="ch7-style-name">Linkin Park</span><span class="ch7-style-tag">新金属</span></div><div class="ch7-style-track" title="In the End">♪ In the End<span class="ch7-style-pop">Pop 88</span></div><div class="ch7-style-metrics">Danceability 0.56 · Energy 0.86 · Tempo 105 · Loud -5.9</div></div></div><div class="ch7-style-card"><span class="ch7-style-dot" style="background:#edc948"></span><div class="ch7-style-main"><div class="ch7-style-head"><span class="ch7-style-name">Mrs. GREEN APPLE</span><span class="ch7-style-tag">日式流行摇滚</span></div><div class="ch7-style-track" title="ライラック">♪ ライラック<span class="ch7-style-pop">Pop 80</span></div><div class="ch7-style-metrics">Danceability 0.53 · Energy 0.79 · Tempo 150 · Loud -4.4</div></div></div><div class="ch7-style-card"><span class="ch7-style-dot" style="background:#f28e2b"></span><div class="ch7-style-main"><div class="ch7-style-head"><span class="ch7-style-name">Taylor Swift</span><span class="ch7-style-tag">乡村流行</span></div><div class="ch7-style-track" title="Cruel Summer">♪ Cruel Summer<span class="ch7-style-pop">Pop 89</span></div><div class="ch7-style-metrics">Danceability 0.55 · Energy 0.70 · Tempo 170 · Loud -5.7</div></div></div><div class="ch7-style-card"><span class="ch7-style-dot" style="background:#b07aa1"></span><div class="ch7-style-main"><div class="ch7-style-head"><span class="ch7-style-name">The Weeknd</span><span class="ch7-style-tag">复古 R&amp;B</span></div><div class="ch7-style-track" title="Cry For Me">♪ Cry For Me<span class="ch7-style-pop">Pop 90</span></div><div class="ch7-style-metrics">Danceability 0.65 · Energy 0.65 · Tempo 120 · Loud -6.4</div></div></div></div>
+      </div>
+      
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>代表歌手作品分布</span>
+        <span>图例含流派 · 点击散点播放</span>
+      </div>
+      <div id="chart-7" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>代表歌手作品分布</div><div>Style Matrix</div></div>
+</section>
+
+<section class="slide dark split-slide ch8-emotion" data-chart="emotion_quadrant" data-chart-id="chart-8" data-slide="8">
+  <div class="chrome"><div>Act VII · 情绪空间</div><div>09 / 12</div></div>
+  <div class="deck-layout-ch8 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 8 章</div>
+      <h2 class="h1-zh" data-anim>情绪象限</h2>
+      <p class="body-zh deck-lead deck-lead-ch8" data-anim>我们专门对 Taylor 和 Billie 的情绪象限进行了比较分析。数据显示，Billie 的歌普遍落在低 Energy、低 Valence 区域——也就是低能量 + 负面情绪的象限。</p><p class="body-zh deck-detail deck-detail-ch8" data-anim>这恰好对应了 2016 年前后在年轻人中蔓延的「丧文化」：疲惫、焦虑、反对过度积极。</p>
+      
+      
+      
+      
+      
+      
+      
+      
+      <div class="ch8-emotion-panel">
+        <p class="ch8-aside-hint">点击图表最左下角 Billie 散点 · 高亮锚点并展开侧栏</p>
+        <div class="ch8-aside" aria-hidden="true">
+          <div class="ch8-viz-wrap">
+            <div class="ch8-viz" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="25 70 180 130" role="img" aria-label="Low energy low valence quadrant">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#151b26"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4e79a7" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#4e79a7" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#4e79a7" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <rect width="320" height="200" fill="url(#bg)" rx="8"/>
+  <g opacity="0.22" stroke="#6a7f99" stroke-width="0.75" fill="none">
+    <line x1="40" y1="20" x2="40" y2="170"/>
+    <line x1="40" y1="170" x2="300" y2="170"/>
+    <line x1="170" y1="20" x2="170" y2="170" stroke-dasharray="4 4" stroke="#e15759" opacity="0.7"/>
+    <line x1="40" y1="95" x2="300" y2="95" stroke-dasharray="4 4" stroke="#e15759" opacity="0.7"/>
+  </g>
+  <rect x="40" y="95" width="130" height="75" fill="#4e79a7" opacity="0.06" rx="2"/>
+  <text x="48" y="188" fill="#7a8fa8" font-family="Arial,sans-serif" font-size="9" letter-spacing="0.08em">ENERGY</text>
+  <text x="12" y="100" fill="#7a8fa8" font-family="Arial,sans-serif" font-size="9" letter-spacing="0.08em" transform="rotate(-90 12 100)">VALENCE</text>
+  <circle cx="72" cy="152" r="28" fill="url(#glow)" filter="url(#blur)"/>
+  <circle cx="72" cy="152" r="9" fill="#4e79a7" stroke="#eef3fa" stroke-width="2"/>
+  <circle cx="72" cy="152" r="14" fill="none" stroke="#9ec5e8" stroke-width="1.2" opacity="0.65"/>
+  <text x="92" y="148" fill="#c8d6e8" font-family="Georgia,serif" font-size="11" font-style="italic">listen before i go</text>
+  <text x="92" y="163" fill="#7a8fa8" font-family="Arial,sans-serif" font-size="8">E 0.06 / V 0.08</text>
+</svg>
+</div>
+            <span class="ch8-viz-cap">左下象限 · listen before i go</span>
+          </div>
+          <button type="button" class="ch8-track-play"
+            data-track-id="0tMSssfxAL2oV8Vri0mFHE"
+            data-artist="Billie Eilish"
+            data-track="listen before i go">
+            <span class="ch8-tp-label">代表曲 · 点击试听</span>
+            <span class="ch8-tp-title">listen before i go</span>
+            <span class="ch8-tp-artist">Billie Eilish · WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?</span>
+            <span class="ch8-tp-metrics">Energy 0.056 · Valence 0.082</span>
+            <span class="ch8-tp-play">♪ 播放</span>
+          </button>
+          <p class="ch8-anchor-note">Billie 在 Top 10,000 曲目中<strong>最靠近左下角</strong>的单曲——低 Energy + 低 Valence，是「丧文化」情绪坐标的极端样本。</p>
+          <div class="ch8-aside-foot" aria-hidden="true">Energy × Valence</div>
+        </div>
+      </div>
+      
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Energy × Valence</span>
+        <span>横轴 最大值 Valence · 纵轴 最大值 Energy · 刻度 0.05 · 点击最左下 Billie 点高亮</span>
+      </div>
+      <div id="chart-8" class="deck-chart "></div>
+    </div>
+  </div>
+  <div class="foot"><div>Energy × Valence</div><div>Emotion Quadrant</div></div>
+</section>
+
+<section class="slide light split-slide ch9-explicit" data-chart="explicit_trend" data-chart-id="chart-9" data-slide="9">
+  <div class="chrome"><div>Act VIII · 文化反叛</div><div>10 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 9 章</div>
+      <h2 class="h1-zh" data-anim>文化反叛</h2>
+      <p class="body-zh deck-lead deck-lead-compact" data-anim>Billie 的成功不是孤立的，它扯下了主流文化的一角，背后映射出的是「文化反叛」开始成为全球年轻人的审美新趋势。</p>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <div class="ch9-explicit-aside">
+        <div class="ch9-aside-label">2018–2024 · Explicit 标签激增</div>
+        <div class="ch9-peak-cards">
+        <div class="ch9-peak-card ch9-peak-card--featured" data-genre="HipHop" style="--ch9-accent:#79706e">
+          <span class="ch9-peak-genre">HipHop</span>
+          <span class="ch9-peak-count">261</span>
+          <span class="ch9-peak-meta">2024 年峰值 · 首 Explicit</span>
+          <span class="ch9-peak-note">2024 峰值 · 街头叙事与 Explicit 高度绑定</span>
+        </div>
+        <div class="ch9-peak-card" data-genre="Latin" style="--ch9-accent:#8cd17d">
+          <span class="ch9-peak-genre">Latin</span>
+          <span class="ch9-peak-count">162</span>
+          <span class="ch9-peak-meta">2024 年峰值 · 首 Explicit</span>
+          <span class="ch9-peak-note">西语流行 · 身体与欲望的直接表达</span>
+        </div>
+        <div class="ch9-peak-card" data-genre="Pop" style="--ch9-accent:#499894">
+          <span class="ch9-peak-genre">Pop</span>
+          <span class="ch9-peak-count">129</span>
+          <span class="ch9-peak-meta">2024 年峰值 · 首 Explicit</span>
+          <span class="ch9-peak-note">主流 Pop 同步抬升，Billie 系审美外溢</span>
+        </div>
+        <div class="ch9-peak-card" data-genre="R&amp;B" style="--ch9-accent:#86bcb6">
+          <span class="ch9-peak-genre">R&amp;B</span>
+          <span class="ch9-peak-count">115</span>
+          <span class="ch9-peak-meta">2024 年峰值 · 首 Explicit</span>
+          <span class="ch9-peak-note">黑人文化谱系里的长期规范抵抗</span>
+        </div>
+        <div class="ch9-peak-card" data-genre="Rock" style="--ch9-accent:#ff9d9a">
+          <span class="ch9-peak-genre">Rock</span>
+          <span class="ch9-peak-count">34</span>
+          <span class="ch9-peak-meta">2024 年峰值 · 首 Explicit</span>
+          <span class="ch9-peak-note">总量低于 HipHop，但 2018 年后同样抬头</span>
+        </div></div>
+        <p class="ch9-aside-hint">点击流派卡片 · 左侧信息逐条常亮 · 图表仅高亮当前项 · 点击空白处重置</p>
+      </div>
+      
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head ch9-chart-head">
+        <div class="chart-panel-head-col">
+          <span class="chart-panel-title">Explicit 标签变化趋势</span>
+          <span class="chart-panel-unit">纵轴 Explicit（首/年）· 横轴 发行年份 · Main Genres</span>
+        </div>
+        <div class="ch9-bubble-legend" aria-hidden="true">
+          <span class="ch9-bl-caption">气泡大小 = Explicit（首/年）</span>
+          <div class="ch9-bl-steps"><span class="ch9-bl-item"><i class="ch9-bl-dot" style="--s:5px"></i>0</span><span class="ch9-bl-item"><i class="ch9-bl-dot" style="--s:10px"></i>100</span><span class="ch9-bl-item"><i class="ch9-bl-dot" style="--s:14px"></i>200</span><span class="ch9-bl-item"><i class="ch9-bl-dot" style="--s:14px"></i>261</span></div>
+        </div>
+      </div>
+      <div id="chart-9" class="deck-chart facet"></div>
+    </div>
+  </div>
+  <div class="foot"><div>Explicit 标签变化趋势</div><div>Explicit Trend</div></div>
+</section>
+
+<section class="slide dark split-slide ch10-paradox" data-chart="explicit_ratio" data-chart-id="chart-10" data-slide="10">
+  <div class="chrome"><div>Act IX · 行业悖论</div><div>11 / 12</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 10 章</div>
+      <h2 class="h1-zh" data-anim>叛逆悖论</h2>
+      <p class="body-zh deck-lead deck-lead-compact" data-anim>最有趣的行业悖论发生在「哪些流派更叛逆」的占比分析中：</p>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <div class="ch10-paradox-aside">
+        <div class="ch10-paradox-cards">
+        <div class="ch10-paradox-card" data-genre="R&amp;B" style="--ch10-accent:#86bcb6">
+          <span class="ch10-paradox-kicker">行业悖论 · R&amp;B</span>
+          <span class="ch10-paradox-pct">41.54%</span>
+          <span class="ch10-paradox-note">根植于黑人文化对社会规范的长期抵抗</span>
+          
+        </div>
+        <div class="ch10-paradox-card" data-genre="Metal" style="--ch10-accent:#b6992d">
+          <span class="ch10-paradox-kicker">行业悖论 · Metal</span>
+          <span class="ch10-paradox-pct">35.19%</span>
+          <span class="ch10-paradox-note">极端表达的另一面</span>
+          
+        </div>
+        <div class="ch10-paradox-card" data-genre="Latin" style="--ch10-accent:#8cd17d">
+          <span class="ch10-paradox-kicker">行业悖论 · Latin</span>
+          <span class="ch10-paradox-pct">28.34%</span>
+          <span class="ch10-paradox-note">对身体与欲望的直接表达习惯</span>
+          
+        </div>
+        <div class="ch10-paradox-card ch10-paradox-card--featured" data-genre="Rock" style="--ch10-accent:#ff9d9a">
+          <span class="ch10-paradox-kicker">行业悖论 · Rock</span>
+          <span class="ch10-paradox-pct">13.57%</span>
+          <span class="ch10-paradox-note">刻板印象最「狂躁」，Explicit 占比却低于 Pop</span>
+          <span class="ch10-paradox-compare">仅为 R&amp;B（41.54%）的 33% · HipHop 高达 64.43%</span>
+        </div></div>
+        <p class="ch10-aside-hint">点击卡片或图表条柱 · 左侧信息逐条常亮 · 首次点击条柱增长 · 点击空白处重置</p>
+      </div>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span class="chart-panel-title">各流派 Explicit 占比</span>
+        <span class="chart-panel-unit">占比 = Explicit / 总曲目 · 初始全量 · 点击仅亮一条</span>
+      </div>
+      <div id="chart-10" class="deck-chart ratio"></div>
+    </div>
+  </div>
+  <div class="foot"><div>各流派 Explicit 占比</div><div>Explicit Ratio</div></div>
+</section>
+
+<section class="slide hero light" data-slide="10">
+  <div class="chrome"><div>Closing · 结语</div><div>12 / 12</div></div>
+  <div class="frame" style="display:grid;gap:3.5vh;align-content:center;min-height:72vh;text-align:center">
+    <div class="kicker" data-anim style="justify-self:center">Takeaway</div>
+    <h2 class="h1-zh" data-anim>音乐没有标准答案，<br><em>但有数据可循。</em></h2>
+    <p class="body-zh" style="max-width:58vw;justify-self:center;opacity:.85" data-anim>
+      从王权交替到情绪象限，从黄金公式到文化反叛——10,000 次心跳的采样，
+      让我们听见全球数字音乐的情绪脉动。数据不会替代审美，
+      但它能帮我们读懂 Spotify 热门歌曲背后，那些关于时代、身份与反叛的故事。
+    </p>
+    <div class="meta-row" data-anim style="justify-content:center;font-family:var(--mono);font-size:12px;letter-spacing:.16em;opacity:.6">
+      <span>谢谢</span><span>·</span><span>Q&amp;A</span>
+    </div>
+  </div>
+  <div class="foot"><div>10,000次心跳的采样</div><div>2026</div></div>
+</section>
+
+</div>
+
+<div id="nav"></div>
+
+<script>
+/* =============== WebGL 双背景 ===============
+   深色页：Holographic Dispersion（全息色散 · 钛金暗流）—— 彩虹微扰、鼠标径向涟漪
+   浅色页：Spiral Vortex（旋转涡流 · 银色珍珠）—— domain-warp 流动、无中心
+   修改风格请参考 references/webgl-backgrounds.md
+*/
+const VS = `attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
+
+const FS_DARK = `precision highp float;
+uniform vec2 u_resolution;uniform float u_time;uniform vec2 u_mouse;
+vec3 palette(float t,vec3 a,vec3 b,vec3 c,vec3 d){return a+b*cos(6.28318*(c*t+d));}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_resolution.xy;
+  vec2 p=uv*2.0-1.0;p.x*=u_resolution.x/u_resolution.y;
+  vec2 m=u_mouse*2.0-1.0;m.x*=u_resolution.x/u_resolution.y;
+  float md=length(p-m);
+  float mr=sin(md*15.0-u_time*4.0)*exp(-md*3.0);p+=mr*0.08;
+  vec2 p0=p;
+  for(float i=1.0;i<4.0;i++){
+    p.x+=0.1/i*sin(i*3.0*p.y+u_time*0.4)+0.05;
+    p.y+=0.1/i*cos(i*2.0*p.x+u_time*0.3)-0.05;
+  }
+  float r=length(p);float ang=atan(p.y,p.x);
+  vec3 a=vec3(0.12,0.12,0.13);
+  vec3 b=vec3(0.03,0.04,0.05);
+  vec3 c=vec3(1.0,1.0,1.0);
+  vec3 d=vec3(0.1,0.2,0.4);
+  vec3 col=palette(r*1.5+p0.x*0.5+u_time*0.1,a,b,c,d);
+  float disp=sin(r*25.0-u_time*1.5+ang*2.0)*0.5+0.5;
+  col+=vec3(disp*0.015,disp*0.01,disp*0.02);
+  float hi=pow(sin(p.x*4.0+p.y*3.0+u_time)*0.5+0.5,8.0);
+  col+=hi*0.08;
+  vec3 base=vec3(0.05,0.05,0.06);
+  col=mix(base,col,0.85);
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const FS_LIGHT = `precision highp float;
+uniform vec2 u_resolution;uniform float u_time;uniform vec2 u_mouse;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){
+  vec2 i=floor(p),f=fract(p);
+  float a=hash(i),b=hash(i+vec2(1,0));
+  float c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
+  vec2 u=f*f*(3.0-2.0*f);
+  return mix(a,b,u.x)+(c-a)*u.y*(1.0-u.x)+(d-b)*u.x*u.y;
+}
+float fbm(vec2 p){
+  float v=0.0,a=0.5;
+  mat2 m=mat2(0.80,0.60,-0.60,0.80);
+  for(int i=0;i<5;i++){v+=a*noise(p);p=m*p*2.02;a*=0.5;}
+  return v;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_resolution.xy;
+  vec2 p=uv;p.x*=u_resolution.x/u_resolution.y;
+  vec2 m=u_mouse;m.x*=u_resolution.x/u_resolution.y;
+  vec2 md=p-m;float dl=length(md);
+  p+=normalize(md+vec2(0.0001))*exp(-dl*5.0)*0.03;
+  vec2 q=vec2(fbm(p*1.8+u_time*0.07),fbm(p*1.8+vec2(5.2,1.3)+u_time*0.06));
+  vec2 r=vec2(fbm(p*2.0+q*1.3+vec2(1.7,9.2)+u_time*0.05),
+              fbm(p*2.0+q*1.3+vec2(8.3,2.8)+u_time*0.04));
+  float f=fbm(p*2.2+r*1.5);
+  vec3 silverDark=vec3(0.86,0.85,0.84);
+  vec3 paper=vec3(0.955,0.945,0.925);
+  vec3 col=mix(silverDark,paper,f);
+  float ph=r.x*2.2+u_time*0.35;
+  col+=vec3(0.78,0.62,0.92)*sin(ph)*0.055;
+  col+=vec3(0.55,0.72,0.95)*sin(ph*0.8+2.0)*0.05;
+  float hl=smoothstep(0.48,0.92,f);
+  col+=hl*0.06;
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const mouse={x:0.5,y:0.5};
+addEventListener('mousemove',e=>{mouse.x=e.clientX/innerWidth;mouse.y=e.clientY/innerHeight});
+
+function bootGL(canvasId, fsSrc){
+  const canvas=document.getElementById(canvasId);
+  const gl=canvas.getContext('webgl',{alpha:false,antialias:true});
+  if(!gl) return ()=>false;
+  const mk=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);return sh};
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mk(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,mk(gl.FRAGMENT_SHADER,fsSrc));
+  gl.linkProgram(prog);gl.useProgram(prog);
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const pos=gl.getAttribLocation(prog,'position');
+  gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+  const lRes=gl.getUniformLocation(prog,'u_resolution');
+  const lT=gl.getUniformLocation(prog,'u_time');
+  const lM=gl.getUniformLocation(prog,'u_mouse');
+  const resize=()=>{
+    const d=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=innerWidth*d;canvas.height=innerHeight*d;
+    gl.viewport(0,0,canvas.width,canvas.height);
+  };
+  addEventListener('resize',resize);resize();
+  return (tSec)=>{
+    gl.uniform2f(lRes,canvas.width,canvas.height);
+    gl.uniform1f(lT,tSec);
+    gl.uniform2f(lM,mouse.x,1-mouse.y);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    return true;
+  };
+}
+let drawDark=null, drawLight=null, glRAF=0, glT0=Date.now();
+function startGL(){
+  if(window.__lowPowerMode || glRAF) return;
+  if(!drawDark) drawDark=bootGL('bg-dark',FS_DARK);
+  if(!drawLight) drawLight=bootGL('bg-light',FS_LIGHT);
+  glT0=Date.now();
+  function loop(){
+    if(window.__lowPowerMode){glRAF=0;return;}
+    const t=(Date.now()-glT0)/1000;
+    drawDark(t);drawLight(t);
+    glRAF=requestAnimationFrame(loop);
+  }
+  glRAF=requestAnimationFrame(loop);
+}
+function stopGL(){
+  if(glRAF) cancelAnimationFrame(glRAF);
+  glRAF=0;
+}
+startGL();
+addEventListener('ppt-low-power-change', e=>{e.detail.on ? stopGL() : startGL();});
+
+// =============== 导航（翻页 / 圆点 / 键盘 / 滚轮 / 触屏） ===============
+const deck=document.getElementById('deck');
+const slides=deck.querySelectorAll('.slide');
+const nav=document.getElementById('nav');
+let idx=0,total=slides.length,lock=false;
+
+// 关键：矫正 deck 宽度为 total * 100vw，否则翻页会错位
+deck.style.width=(total*100)+'vw';
+
+slides.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.className='dot';b.dataset.i=i;b.setAttribute('aria-label','Page '+(i+1));
+  b.onclick=()=>go(i);
+  nav.appendChild(b);
+});
+
+function go(n){
+  if(lock)return;
+  idx=Math.max(0,Math.min(total-1,n));
+  window.__currentSlideIndex = idx;
+  if(window.__onDeckSlide) window.__onDeckSlide(idx);
+  deck.style.transform=`translateX(${-idx*100}vw)`;
+  nav.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  /* 主题切换：优先读 data-theme，其次从 class（light/dark）推断 */
+  const el=slides[idx];
+  const th=el.dataset.theme || (el.classList.contains('light')?'light':(el.classList.contains('dark')?'dark':'dark'));
+  document.body.classList.toggle('light-bg',th==='light');
+  /* 动效：翻页过渡中段触发当前页的入场动画（由 motion-boot 注册） */
+  if(window.__playSlide) setTimeout(()=>window.__playSlide(idx), 450);
+  lock=true;setTimeout(()=>lock=false,700);
+}
+
+/* =============== ESC 索引视图 =============== */
+let overviewOn=false;
+const ov=document.createElement('div');
+ov.id='overview';
+ov.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(var(--ink-rgb),.92);backdrop-filter:blur(12px);display:none;overflow-y:auto;padding:4vh 4vw';
+document.body.appendChild(ov);
+
+function buildOverview(){
+  ov.innerHTML='';
+  const grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:2vh 1.6vw;max-width:90vw;margin:0 auto';
+  slides.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.style.cssText='cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid '+(i===idx?'rgba(var(--paper-rgb),.8)':'rgba(var(--paper-rgb),.15)')+';transition:border-color .2s';
+    card.onmouseenter=()=>card.style.borderColor='rgba(var(--paper-rgb),.6)';
+    card.onmouseleave=()=>card.style.borderColor=i===idx?'rgba(var(--paper-rgb),.8)':'rgba(var(--paper-rgb),.15)';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;pointer-events:none;background:'+(s.classList.contains('light')?'var(--paper)':'var(--ink)');
+    const clone=s.cloneNode(true);
+    clone.style.cssText='width:100vw;height:100vh;transform:scale('+(1/4.5)+');transform-origin:top left;position:absolute;top:0;left:0;pointer-events:none';
+    wrap.appendChild(clone);
+    const label=document.createElement('div');
+    label.style.cssText='padding:6px 10px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);opacity:.7';
+    label.textContent=(i+1)+' / '+total;
+    card.appendChild(wrap);
+    card.appendChild(label);
+    card.onclick=()=>{toggleOverview();go(i)};
+    grid.appendChild(card);
+  });
+  ov.appendChild(grid);
+}
+
+function toggleOverview(){
+  overviewOn=!overviewOn;
+  if(overviewOn){buildOverview();ov.style.display='block';}
+  else{ov.style.display='none';}
+}
+
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();toggleOverview();return;}
+  if(e.key && e.key.toLowerCase()==='b' && !e.metaKey && !e.ctrlKey && !e.altKey){
+    e.preventDefault();
+    window.__setLowPowerMode(!window.__lowPowerMode);
+    return;
+  }
+  if(overviewOn)return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '||e.key==='ArrowDown'){
+    if(window.__pipeAdvance && window.__pipeAdvance()) return;
+    go(idx+1);
+    return;
+  }
+  if(e.key==='ArrowLeft'||e.key==='PageUp'||e.key==='ArrowUp')go(idx-1);
+  if(e.key==='Home')go(0);
+  if(e.key==='End')go(total-1);
+});
+
+let wheelTO=null,wheelAcc=0;
+addEventListener('wheel',e=>{
+  wheelAcc+=e.deltaY+e.deltaX;
+  if(Math.abs(wheelAcc)>50){
+    if(wheelAcc>0 && window.__pipeAdvance && window.__pipeAdvance()){
+      wheelAcc=0;
+    }else{
+      go(idx+(wheelAcc>0?1:-1));wheelAcc=0;
+    }
+  }
+  clearTimeout(wheelTO);wheelTO=setTimeout(()=>wheelAcc=0,150);
+},{passive:true});
+
+let tx=0,ty=0;
+addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{
+  const dx=(e.changedTouches[0].clientX-tx);
+  const dy=(e.changedTouches[0].clientY-ty);
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){
+    if(dx<0 && window.__pipeAdvance && window.__pipeAdvance()) return;
+    go(idx+(dx<0?1:-1));
+  }
+},{passive:true});
+
+go(0);
+</script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+
+<!-- ============ Motion One 动效引擎（本地优先,CDN 兜底） ============
+     加载策略:先 ./assets/motion.min.js(本地,离线可用),失败 fallback 到 jsDelivr CDN
+     加载完成后挂 window.__playSlide / window.__pipeAdvance,
+     导航脚本会在翻页中段调用 __playSlide(idx),键盘/滚轮/触屏会在翻页前调用 __pipeAdvance()
+     双双失败时会兜底把所有 [data-anim] 设为可见,不让动效破坏阅读
+-->
+<script type="module">
+let motion;
+try {
+  motion = await import('./assets/motion.min.js');
+} catch(e1) {
+  try {
+    motion = await import('https://cdn.jsdelivr.net/npm/motion@11.11.17/+esm');
+  } catch(e2) {
+    console.warn('[motion] local + CDN both failed, disabling animations', e1, e2);
+    document.querySelectorAll('[data-anim]').forEach(el=>{el.style.opacity='1';el.style.transform='none'});
+    document.querySelectorAll('[data-animate="pipeline"] [data-anim]').forEach(el=>el.style.opacity='1');
+  }
+}
+
+if(motion){
+  const { animate, stagger } = motion;
+  document.body.classList.add('motion-ready');
+  const EASE = [.22, 1, .36, 1];
+  const slides = [...document.querySelectorAll('.slide')];
+  let pipeStep = -1;
+  let lastIdx = -1;
+
+  function resetAnims(slide){
+    slide.querySelectorAll('[data-anim]').forEach(el=>{
+      el.style.opacity='';
+      el.style.transform='';
+    });
+  }
+
+  function revealStatic(slide){
+    resetAnims(slide);
+    document.getAnimations?.().forEach(a=>a.cancel());
+    slide.querySelectorAll('[data-anim]').forEach(el=>{
+      el.style.opacity='1';
+      el.style.transform='none';
+    });
+  }
+
+  function playSlide(i){
+    const slide = slides[i];
+    if(!slide) return;
+    lastIdx = i;
+    const recipe = slide.dataset.animate || (slide.classList.contains('hero') ? 'hero' : 'cascade');
+
+    if(window.__lowPowerMode){
+      revealStatic(slide);
+      return;
+    }
+
+    if(recipe === 'pipeline'){
+      pipeStep = -1;
+      slide.querySelectorAll('[data-anim]').forEach(el=>{
+        el.style.opacity='0.15';
+        el.style.transform='none';
+      });
+      return;
+    }
+
+    resetAnims(slide);
+    const all = [...slide.querySelectorAll('[data-anim]')];
+    if(!all.length) return;
+
+    if(recipe === 'directional'){
+      const lefts  = all.filter(el=>el.dataset.anim==='left');
+      const divs   = all.filter(el=>el.dataset.anim==='divider');
+      const rights = all.filter(el=>el.dataset.anim==='right');
+      const others = all.filter(el=>!['left','right','divider'].includes(el.dataset.anim));
+      if(others.length) animate(others, {opacity:[0,1], y:[12,0]}, {duration:.6, delay:stagger(.1, {start:.15}), easing:EASE});
+      if(lefts.length)  animate(lefts,  {opacity:[0,1], x:[-24,0]}, {duration:.8, delay:.35, easing:EASE});
+      if(divs.length)   animate(divs,   {opacity:[0,.25]},          {duration:.5, delay:.9});
+      if(rights.length) animate(rights, {opacity:[0,1], x:[24,0]},  {duration:.8, delay:1.0, easing:EASE});
+      return;
+    }
+
+    if(recipe === 'quote'){
+      const lines = all.filter(el=>el.dataset.anim==='line');
+      const others = all.filter(el=>el.dataset.anim!=='line');
+      if(others.length) animate(others, {opacity:[0,1], y:[8,0]},    {duration:.6, delay:stagger(.12, {start:.2}), easing:EASE});
+      if(lines.length)  animate(lines,  {opacity:[.35,1], y:[10,0]}, {duration:.8, delay:stagger(.55, {start:.5}), easing:EASE});
+      return;
+    }
+
+    if(recipe === 'hero'){
+      animate(all, {opacity:[0,1], y:[14,0]}, {duration:.9, delay:stagger(.16, {start:.2}), easing:EASE});
+      return;
+    }
+
+    // default: cascade
+    animate(all, {opacity:[0,1], y:[16,0]}, {duration:.75, delay:stagger(.1, {start:.15}), easing:EASE});
+  }
+
+  function pipeAdvance(){
+    if(window.__lowPowerMode) return false;
+    const slide = slides[lastIdx];
+    if(!slide || slide.dataset.animate !== 'pipeline') return false;
+    const steps  = [...slide.querySelectorAll('[data-anim="step"]')];
+    const arrows = [...slide.querySelectorAll('[data-anim="arrow"]')];
+    if(pipeStep >= steps.length - 1) return false;
+    pipeStep++;
+    animate(steps[pipeStep], {opacity:[0.15,1], y:[8,0]}, {duration:.5, easing:EASE});
+    if(pipeStep > 0 && arrows[pipeStep-1]){
+      animate(arrows[pipeStep-1], {opacity:[0.15,.7]}, {duration:.3, delay:.15});
+    }
+    return true;
+  }
+
+  window.__playSlide = playSlide;
+  window.__pipeAdvance = pipeAdvance;
+
+  // 首屏:go(0) 已跑过(同步),没来得及触发动效 → 这里补一下
+  playSlide(0);
+}
+</script>
+
+<div id="story-drawer" aria-live="polite" aria-hidden="true"></div>
+
+<div id="genre-showcase" class="genre-showcase" aria-hidden="true">
+  <button class="gs-close" type="button" aria-label="关闭">×</button>
+  <div class="gs-img-wrap" role="img" aria-hidden="true"></div>
+  <div class="gs-cap">
+    <h3 class="gs-name"></h3>
+    <p class="gs-stats"></p>
+    <p class="gs-track"></p>
+    <p class="gs-blurb"></p>
+    <p class="gs-story"></p>
+    <div class="gs-playlist" role="list"></div>
+  </div>
+</div>
+
+<div id="artist-showcase" class="artist-showcase" aria-hidden="true">
+  <button class="as-close" type="button" aria-label="关闭">×</button>
+  <div class="as-hero">
+    <img class="as-photo" alt="" />
+    <div class="as-hero-cap">
+      <h3 class="as-name"></h3>
+      <p class="as-genre"></p>
+    </div>
+  </div>
+  <div class="as-cap">
+    <p class="as-stats"></p>
+    <p class="as-event"></p>
+    <p class="as-story"></p>
+    <button class="as-track-play" type="button" hidden>♪ 播放代表曲</button>
+  </div>
+</div>
+
+<div id="music-bar" aria-live="polite">
+  <div class="mp-track">—</div>
+  <div class="mp-artist"></div>
+  <div class="mp-mode">点击播放</div>
+  <div class="mp-actions">
+    <button class="mp-btn" id="music-close" type="button" title="关闭">×</button>
+  </div>
+  <audio id="music-audio" preload="none"></audio>
+  <iframe id="music-spotify" class="hidden" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+</div>
+
+<script>window.__WEB_DATA_BASE = "../web/data/";</script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="../web/js/tableau-theme.js?v=104"></script>
+<script src="../web/js/chart-stories.js?v=122"></script>
+<script src="../web/js/charts.js?v=174"></script>
+<script src="js/genre-showcase.js?v=125"></script>
+<script src="js/artist-showcase.js?v=126"></script>
+<script src="js/story-panel.js?v=119"></script>
+<script src="js/music-player.js?v=123"></script>
+<script src="js/deck-main.js?v=134"></script>
+
+</body>
+</html>

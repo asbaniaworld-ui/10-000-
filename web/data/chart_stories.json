@@ -1,0 +1,150 @@
+{
+  "genre_market": {
+    "Pop": { "headline": "王座流派", "story": "4,469 首曲目高居榜首，Pop 是 Spotify 热门榜的默认语言。" },
+    "Rock": { "headline": "亚军摇滚", "story": "2,417 首仍稳居第二，但历史曲线已被 Pop 反超。" },
+    "HipHop": { "headline": "说唱山脉", "story": "2,294 首 — 与 Explicit 文化反叛高度同频。" }
+  },
+  "genre_trend": {
+    "chapter_notes": {
+      "Pop": [
+        { "year": 2005, "label": "Pop 反超 Rock", "kind": "turn", "story": "2005 年前后 Pop 热度持续抬升，正式完成对 Rock 的王权交替——本章核心转折点。" },
+        { "year": 2016, "label": "流媒体时代", "kind": "era", "story": "Spotify 全球扩张、短视频推歌机制成熟，单曲传播效率跃升，各流派曲线开始加速。" },
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "线下娱乐停滞，全球流媒体播放量被按下快进键，线上听歌成为日常。" },
+        { "year": 2024, "label": "Pop 历史峰值", "kind": "peak", "story": "Popularity 年度合计达 59,015 分——流媒体 + TikTok 推高的全网峰值。" }
+      ]
+    },
+    "chapter_narratives": {
+      "initial": "在 2000 年代初，Rock 依然是最受欢迎的流派。",
+      "2005": "但在 <strong>2005 年左右</strong>，Pop 的热度曲线拔地而起，正式反超了 Rock。",
+      "2016": "流媒体时代彻底普及——实体唱片的物理门槛被消除，Spotify 与 TikTok 让全球听众随时触达任何流派，各流派曲线开始加速。",
+      "2020": "2020 年疫情爆发，大众线下娱乐停滞，线上听歌成为日常，流媒体播放量被按下「快进键」。",
+      "2024": "到了 2024 年，Pop 的受欢迎程度达到 <strong>59,015</strong> 的历史峰值——几乎所有流派都呈现爆发式指数级增长。"
+    },
+    "turning_points": [
+      { "year": 2005, "label": "Pop 反超 Rock", "story": "2005 年前后，Pop 热度曲线持续抬升，正式完成对 Rock 的王权交替。" },
+      { "year": 2016, "label": "流媒体时代", "story": "流媒体与短视频推歌机制成熟，传播效率跃升。" },
+      { "year": 2020, "label": "疫情时代", "story": "2020 线下娱乐停滞，全球流媒体播放量被按下快进键。" }
+    ],
+    "genre_milestones": {
+      "Pop": [
+        { "year": 2005, "label": "反超 Rock", "kind": "turn", "story": "2005 年左右 Pop 曲线完成对 Rock 的历史性超越。" },
+        { "year": 2016, "label": "流媒体时代", "kind": "era", "story": "流媒体与 TikTok 推歌，Pop 进入加速通道。" },
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "疫情推动线上听歌，各流派同步进入高增长。" }
+      ],
+      "HipHop": [
+        { "year": 2004, "label": "超越 Rock", "kind": "turn", "story": "HipHop 年度热度首次超过 Rock，说唱走向主流中心。" },
+        { "year": 2016, "label": "流媒体时代", "kind": "era", "story": "短视频与流媒体推升说唱传播效率。" },
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "疫情加速线上消费，说唱持续走高。" }
+      ],
+      "Rock": [
+        { "year": 2001, "label": "世纪初霸权", "kind": "era", "story": "2000 年代初 Rock 仍是最受欢迎流派，2001 年热度达阶段高点。" },
+        { "year": 2005, "label": "被 Pop 反超", "kind": "turn", "story": "Rock 相对 Pop 的优势在此后逐步收窄，王权交替完成。" }
+      ],
+      "Latin": [
+        { "year": 2017, "label": "西语逆袭", "kind": "turn", "story": "Latin 热度进入持续上升通道，Bad Bunny 等艺人全球破圈。" },
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "流媒体推升西语流行全球传播。" }
+      ],
+      "R&B": [
+        { "year": 2016, "label": "复古 R&B 回潮", "kind": "turn", "story": "The Weeknd 等带动 R&B 在流媒体时代二次爆发。" },
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "线上听歌习惯加深，R&B 稳步增长。" }
+      ],
+      "Electronic": [
+        { "year": 2012, "label": "EDM 浪潮", "kind": "turn", "story": "电子舞曲与 festival 文化推升 Electronic 热度。" },
+        { "year": 2016, "label": "流媒体时代", "kind": "era", "story": "歌单经济与短视频带动电子乐传播。" }
+      ],
+      "Country": [
+        { "year": 2020, "label": "疫情时代", "kind": "era", "story": "居家场景增多，Country 流媒体收听回升。" }
+      ]
+    },
+    "peaks": {
+      "Pop": { "year": 2024, "value": 59015, "story": "流媒体普及 + TikTok 推歌机制，Pop 在 2024 达历史峰值。" },
+      "Rock": { "year": 2003, "value": null, "story": "Rock 在 2000 年代初仍是统治级流派，此后增长趋缓。" }
+    }
+  },
+  "artist_scatter": {
+    "Taylor Swift": { "story": "16,074M+ 粉丝 · Pop 代言人，《The Eras Tour》将流媒体热度推向新高度。", "event": "2023–2024 时代巡演" },
+    "Bad Bunny": { "story": "Latin 全球逆袭的旗手，西语流行打破英语中心主义。", "event": "2022–2024 流媒体霸榜" },
+    "Drake": { "story": "HipHop 山巅之一，多伦多说唱与 R&B 旋律的混合体。", "event": "持续霸榜 Spotify" },
+    "Billie Eilish": { "story": "低能量异类，粉丝量与音频指纹背道而驰。", "event": "2019 首张专辑爆发" },
+    "Playboi Carti": { "story": "HipHop 另一极峰，陷阱与实验人声的代表。", "event": "2024 新专辑热度" }
+  },
+  "top100_golden": {
+    "Top 100": {
+      "story": "Top 100 黄金配比：Tempo≈120、Energy≈0.61、强律动、高响度 — 流媒体时代的「标准答案」。",
+      "highlights": { "tempo": 120.11, "energy": 0.6139, "danceability": 0.6481, "loudness": -7.88 }
+    }
+  },
+  "top10_golden": {
+    "Billie Eilish": {
+      "story": "Energy 仅 0.33、Loudness -11.9、Tempo 117 — 响度/能量/速度三项偏离 Top100 黄金公式。",
+      "outlier": "energy",
+      "highlights": ["loudness", "energy", "tempo"]
+    },
+    "Taylor Swift": { "story": "四项指标最接近 Top100 均值，流行工业化的完美样本。" },
+    "Imagine Dragons": { "story": "Energy 偏高，摇滚与流行跨界的能量代表。" }
+  },
+  "top10_heatmap": {
+    "Billie Eilish": {
+      "story": "2016 年首支单曲后，Pop 行在 2017/2019/2021 多次冲高 — 异类物理指纹，顶流市场热度。",
+      "by_year": {
+        "2016": {
+          "title": "横空出世",
+          "story": "《Ocean Eyes》在 SoundCloud 爆红，随即签约 Interscope。Top 10,000 中仅 1 首入榜，Popularity 均值 74 分——一切从这里开始。"
+        },
+        "2017": {
+          "title": "初露锋芒",
+          "story": "首张 EP《don't smile at me》发行，Billboard 200 第 14。当年 8 首入榜，均值 78 分，热度开始稳步抬升。"
+        },
+        "2018": {
+          "title": "蓄力过渡",
+          "story": "发行间隙年，榜单仍以少量曲目维持存在感。低能量、暗色调的审美标签进一步固化。"
+        },
+        "2019": {
+          "title": "全球爆红",
+          "story": "首张专辑夺冠，《bad guy》Hot 100 登顶。12 首同年入榜——Billie 首次进入发歌大年，流媒体热度全面爆发。"
+        },
+        "2020": {
+          "title": "格莱美横扫",
+          "story": "18 岁揽五项格莱美，史上最年轻年度专辑得主。榜单曲目不多，但奖项声量将个人品牌推至顶峰。"
+        },
+        "2021": {
+          "title": "奖项延续",
+          "story": "格莱美年度制作、《No Time To Die》Bond 主题曲。13 首入榜为历年最多之一，均值 75 分，创作产能与奖项并行。"
+        },
+        "2022": {
+          "title": "奥斯卡加冕",
+          "story": "《No Time To Die》获奥斯卡最佳原创歌曲。当年 2 首在榜，均值 80 分——单点精品策略，奖项大于数量。"
+        },
+        "2023": {
+          "title": "巡演间隙",
+          "story": "Happier Than Ever 巡演后进入相对静默期。2 首在榜、均值 82 分，热度靠存量金曲支撑。"
+        },
+        "2024": {
+          "title": "三专双奖",
+          "story": "《What Was I Made For?》横扫奥斯卡 + 格莱美。11 首入榜、均值 85 分——三专周期再现发歌大年，热度重回高位。"
+        },
+        "2025": {
+          "title": "巅峰持续",
+          "story": "AMA 七项大奖、全球巡演至 11 月。数据集截止 2024，但奖项与巡演标志 Billie 仍在顶流中心。"
+        }
+      }
+    }
+  },
+  "emotion_quadrant": {
+    "Billie Eilish": { "story": "低 Energy + 低 Valence：「丧文化」的音频坐标。", "quadrant": "左下" },
+    "Taylor Swift": { "story": "中高能量 + 正向情绪，主流积极叙事的声学映射。", "quadrant": "右上" }
+  },
+  "explicit_trend": {
+    "peaks": [
+      { "genre": "HipHop", "year": 2024, "value": 261, "story": "2024 年 HipHop Explicit 达 261，文化反叛的量化峰值。" },
+      { "genre": "Latin", "year": 2024, "value": 162, "story": "Latin 紧随其后，身体与欲望的直接表达。" }
+    ]
+  },
+  "explicit_ratio": {
+    "Rock": { "story": "刻板印象最「狂躁」的 Rock，Explicit 占比仅 13.57% — 行业最大悖论。", "value": 13.57 },
+    "R&B": { "story": "41.54% 最高占比之一，根植于黑人文化对社会规范的长期抵抗。", "value": 41.54 },
+    "Metal": { "story": "35.19% — 极端音色与露骨表达在亚文化圈层高度重叠。", "value": 35.19 },
+    "Latin": { "story": "28.34% — 西语流行对身体与欲望的直接表达习惯。", "value": 28.34 },
+    "HipHop": { "story": "64.43% 全流派最高 — Explicit 与街头叙事几乎绑定。", "value": 64.43 }
+  }
+}

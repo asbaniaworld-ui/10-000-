@@ -1,0 +1,389 @@
+{
+  "by_artist": {
+    "Bad Bunny": {
+      "track": "BAILE INoLVIDABLE",
+      "track_id": "2lTm559tuIvatlT1u0JYG2",
+      "artist": "Bad Bunny",
+      "genre": "Latin",
+      "popularity": 96,
+      "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3?hdnea=exp=1782057773~acl=/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3*~data=user_id=0,application_id=42~hmac=123b646cfd1d2df04d521ce924f92317bd9047416522fb90856afa0d59437aa4",
+      "spotify_url": "https://open.spotify.com/track/2lTm559tuIvatlT1u0JYG2"
+    },
+    "Billie Eilish": {
+      "track": "BIRDS OF A FEATHER",
+      "track_id": "6dOtVTDdiauQNBQEDOtlAB",
+      "artist": "Billie Eilish",
+      "genre": "Pop",
+      "popularity": 98,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB"
+    },
+    "Coldplay": {
+      "track": "Yellow",
+      "track_id": "3AJwUDP919kvQ9QcozQPxg",
+      "artist": "Coldplay",
+      "genre": "Rock",
+      "popularity": 91,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/3AJwUDP919kvQ9QcozQPxg"
+    },
+    "Drake": {
+      "track": "NOKIA",
+      "track_id": "2u9S9JJ6hTZS3Vf22HOZKg",
+      "artist": "Drake",
+      "genre": "HipHop",
+      "popularity": 91,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/2u9S9JJ6hTZS3Vf22HOZKg"
+    },
+    "Imagine Dragons": {
+      "track": "Believer",
+      "track_id": "0pqnGHJpmpxLKifKRmU6WP",
+      "artist": "Imagine Dragons",
+      "genre": "Rock",
+      "popularity": 87,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/0pqnGHJpmpxLKifKRmU6WP"
+    },
+    "Taylor Swift": {
+      "track": "Cruel Summer",
+      "track_id": "1BxfuPKGuaTgP7aM0Bbdwr",
+      "artist": "Taylor Swift",
+      "genre": "Pop",
+      "popularity": 89,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/1BxfuPKGuaTgP7aM0Bbdwr"
+    },
+    "The Weeknd": {
+      "track": "Cry For Me",
+      "track_id": "3AWDeHLc88XogCaCnZQLVI",
+      "artist": "The Weeknd",
+      "genre": "R&B",
+      "popularity": 90,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/3AWDeHLc88XogCaCnZQLVI"
+    },
+    "Linkin Park": {
+      "track": "In the End",
+      "track_id": "60a0Rd6pjrkxjPbaKzXjfq",
+      "artist": "Linkin Park",
+      "genre": "Rock",
+      "popularity": 88,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/60a0Rd6pjrkxjPbaKzXjfq"
+    },
+    "Mrs. GREEN APPLE": {
+      "track": "ライラック",
+      "track_id": "78W4mTLIh4qoLu92W4IQhO",
+      "artist": "Mrs. GREEN APPLE",
+      "genre": "Rock",
+      "popularity": 80,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/78W4mTLIh4qoLu92W4IQhO"
+    },
+    "Playboi Carti": {
+      "track": "EVIL J0RDAN",
+      "track_id": "6iycYUk3oB0NPMdaDUrN1w",
+      "artist": "Playboi Carti",
+      "genre": "HipHop",
+      "popularity": 92,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/6iycYUk3oB0NPMdaDUrN1w"
+    }
+  },
+  "by_chapter": {
+    "1": [
+      {
+        "track": "Cruel Summer",
+        "track_id": "1BxfuPKGuaTgP7aM0Bbdwr",
+        "artist": "Taylor Swift",
+        "genre": "Pop",
+        "popularity": 89,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/1BxfuPKGuaTgP7aM0Bbdwr"
+      },
+      {
+        "track": "BAILE INoLVIDABLE",
+        "track_id": "2lTm559tuIvatlT1u0JYG2",
+        "artist": "Bad Bunny",
+        "genre": "Latin",
+        "popularity": 96,
+        "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3?hdnea=exp=1782057773~acl=/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3*~data=user_id=0,application_id=42~hmac=123b646cfd1d2df04d521ce924f92317bd9047416522fb90856afa0d59437aa4",
+        "spotify_url": "https://open.spotify.com/track/2lTm559tuIvatlT1u0JYG2"
+      }
+    ],
+    "3": [
+      {
+        "track": "Cruel Summer",
+        "track_id": "1BxfuPKGuaTgP7aM0Bbdwr",
+        "artist": "Taylor Swift",
+        "genre": "Pop",
+        "popularity": 89,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/1BxfuPKGuaTgP7aM0Bbdwr"
+      },
+      {
+        "track": "BAILE INoLVIDABLE",
+        "track_id": "2lTm559tuIvatlT1u0JYG2",
+        "artist": "Bad Bunny",
+        "genre": "Latin",
+        "popularity": 96,
+        "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3?hdnea=exp=1782057773~acl=/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3*~data=user_id=0,application_id=42~hmac=123b646cfd1d2df04d521ce924f92317bd9047416522fb90856afa0d59437aa4",
+        "spotify_url": "https://open.spotify.com/track/2lTm559tuIvatlT1u0JYG2"
+      },
+      {
+        "track": "NOKIA",
+        "track_id": "2u9S9JJ6hTZS3Vf22HOZKg",
+        "artist": "Drake",
+        "genre": "HipHop",
+        "popularity": 91,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/2u9S9JJ6hTZS3Vf22HOZKg"
+      },
+      {
+        "track": "EVIL J0RDAN",
+        "track_id": "6iycYUk3oB0NPMdaDUrN1w",
+        "artist": "Playboi Carti",
+        "genre": "HipHop",
+        "popularity": 92,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/6iycYUk3oB0NPMdaDUrN1w"
+      }
+    ],
+    "5": [
+      {
+        "track": "BIRDS OF A FEATHER",
+        "track_id": "6dOtVTDdiauQNBQEDOtlAB",
+        "artist": "Billie Eilish",
+        "genre": "Pop",
+        "popularity": 98,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB"
+      }
+    ],
+    "6": [
+      {
+        "track": "BIRDS OF A FEATHER",
+        "track_id": "6dOtVTDdiauQNBQEDOtlAB",
+        "artist": "Billie Eilish",
+        "genre": "Pop",
+        "popularity": 98,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB"
+      },
+      {
+        "track": "In the End",
+        "track_id": "60a0Rd6pjrkxjPbaKzXjfq",
+        "artist": "Linkin Park",
+        "genre": "Rock",
+        "popularity": 88,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/60a0Rd6pjrkxjPbaKzXjfq"
+      },
+      {
+        "track": "ライラック",
+        "track_id": "78W4mTLIh4qoLu92W4IQhO",
+        "artist": "Mrs. GREEN APPLE",
+        "genre": "Rock",
+        "popularity": 80,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/78W4mTLIh4qoLu92W4IQhO"
+      },
+      {
+        "track": "Cruel Summer",
+        "track_id": "1BxfuPKGuaTgP7aM0Bbdwr",
+        "artist": "Taylor Swift",
+        "genre": "Pop",
+        "popularity": 89,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/1BxfuPKGuaTgP7aM0Bbdwr"
+      },
+      {
+        "track": "Cry For Me",
+        "track_id": "3AWDeHLc88XogCaCnZQLVI",
+        "artist": "The Weeknd",
+        "genre": "R&B",
+        "popularity": 90,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/3AWDeHLc88XogCaCnZQLVI"
+      }
+    ],
+    "7": [
+      {
+        "track": "Cruel Summer",
+        "track_id": "1BxfuPKGuaTgP7aM0Bbdwr",
+        "artist": "Taylor Swift",
+        "genre": "Pop",
+        "popularity": 89,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/1BxfuPKGuaTgP7aM0Bbdwr"
+      },
+      {
+        "track": "BIRDS OF A FEATHER",
+        "track_id": "6dOtVTDdiauQNBQEDOtlAB",
+        "artist": "Billie Eilish",
+        "genre": "Pop",
+        "popularity": 98,
+        "preview_url": null,
+        "spotify_url": "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB"
+      }
+    ]
+  },
+  "by_genre": {
+    "Pop": {
+      "track": "Die With A Smile",
+      "track_id": "2plbrEY59IikOBgBGLjaoe",
+      "artist": "Lady Gaga|Bruno Mars",
+      "genre": "Pop",
+      "popularity": 100,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/2plbrEY59IikOBgBGLjaoe"
+    },
+    "Rock": {
+      "track": "Good Luck, Babe!",
+      "track_id": "0WbMK4wrZ1wFSty9F7FCgu",
+      "artist": "Chappell Roan",
+      "genre": "Rock",
+      "popularity": 94,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/0WbMK4wrZ1wFSty9F7FCgu"
+    },
+    "HipHop": {
+      "track": "Not Like Us",
+      "track_id": "6AI3ezQ4o3HUoP6Dhudph3",
+      "artist": "Kendrick Lamar",
+      "genre": "HipHop",
+      "popularity": 96,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/6AI3ezQ4o3HUoP6Dhudph3"
+    },
+    "Latin": {
+      "track": "BAILE INoLVIDABLE",
+      "track_id": "2lTm559tuIvatlT1u0JYG2",
+      "artist": "Bad Bunny",
+      "genre": "Latin",
+      "popularity": 96,
+      "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3?hdnea=exp=1782057773~acl=/api/1/1/2/3/5/0/23585201254a725a2f1f42a1b9a25686.mp3*~data=user_id=0,application_id=42~hmac=123b646cfd1d2df04d521ce924f92317bd9047416522fb90856afa0d59437aa4",
+      "spotify_url": "https://open.spotify.com/track/2lTm559tuIvatlT1u0JYG2"
+    },
+    "R&B": {
+      "track": "luther (with sza)",
+      "track_id": "2CGNAOSuO1MEFCbBRgUzjd",
+      "artist": "Kendrick Lamar|SZA",
+      "genre": "R&B",
+      "popularity": 94,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/2CGNAOSuO1MEFCbBRgUzjd"
+    }
+  },
+  "other_playlist": [
+    {
+      "track": "blue",
+      "track_id": "3be9ACTxtcL6Zm4vJRUiPG",
+      "artist": "yung kai",
+      "genre": "Electronic",
+      "popularity": 92,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/3be9ACTxtcL6Zm4vJRUiPG"
+    },
+    {
+      "track": "Te Quería Ver",
+      "track_id": "78HEzDEs1QUnHB2DbxgC1s",
+      "artist": "Alemán|Neton Vega",
+      "genre": "TraditionalMusic",
+      "popularity": 92,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/78HEzDEs1QUnHB2DbxgC1s"
+    },
+    {
+      "track": "The Night We Met",
+      "track_id": "3hRV0jL3vUpRrcy398teAU",
+      "artist": "Lord Huron",
+      "genre": "Folk",
+      "popularity": 90,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/3hRV0jL3vUpRrcy398teAU"
+    },
+    {
+      "track": "In the End",
+      "track_id": "60a0Rd6pjrkxjPbaKzXjfq",
+      "artist": "Linkin Park",
+      "genre": "Metal",
+      "popularity": 88,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/60a0Rd6pjrkxjPbaKzXjfq"
+    },
+    {
+      "track": "Feel Good Inc.",
+      "track_id": "0d28khcov6AiegSCpG5TuT",
+      "artist": "Gorillaz|De La Soul",
+      "genre": "Jazz",
+      "popularity": 88,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/0d28khcov6AiegSCpG5TuT"
+    },
+    {
+      "track": "I'm The Problem",
+      "track_id": "3HlWVKwU0JqJXqJK9DWHnZ",
+      "artist": "Morgan Wallen",
+      "genre": "Country",
+      "popularity": 87,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/3HlWVKwU0JqJXqJK9DWHnZ"
+    },
+    {
+      "track": "snowfall",
+      "track_id": "4xF4ZBGPZKxECeDFrqSAG4",
+      "artist": "Øneheart|reidenshi",
+      "genre": "NewAge",
+      "popularity": 84,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/4xF4ZBGPZKxECeDFrqSAG4"
+    },
+    {
+      "track": "Rude",
+      "track_id": "6RtPijgfPKROxEzTHNRiDp",
+      "artist": "MAGIC!",
+      "genre": "Reggae",
+      "popularity": 84,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/6RtPijgfPKROxEzTHNRiDp"
+    },
+    {
+      "track": "Me and the Devil",
+      "track_id": "0wrWxW18WK2MkrfDpRHkyh",
+      "artist": "Soap&Skin",
+      "genre": "Classical",
+      "popularity": 81,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/0wrWxW18WK2MkrfDpRHkyh"
+    },
+    {
+      "track": "Monster",
+      "track_id": "2UREu1Y8CO4jXkbvqAtP7g",
+      "artist": "Skillet",
+      "genre": "Christian",
+      "popularity": 81,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/2UREu1Y8CO4jXkbvqAtP7g"
+    },
+    {
+      "track": "Brahms Lullaby",
+      "track_id": "5UAN29M5pGWHmD0MkzxOIM",
+      "artist": "Lullaby Time",
+      "genre": "EasyListening",
+      "popularity": 80,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/5UAN29M5pGWHmD0MkzxOIM"
+    },
+    {
+      "track": "Royalty",
+      "track_id": "7kUljt0NM5sISL3OGNVxYd",
+      "artist": "Egzod|Maestro Chives|Neoni",
+      "genre": "Blues",
+      "popularity": 80,
+      "preview_url": null,
+      "spotify_url": "https://open.spotify.com/track/7kUljt0NM5sISL3OGNVxYd"
+    }
+  ]
+}

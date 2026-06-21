@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10,000次心跳的采样 · 全球数字音乐的「情绪脉动」报告 · Meteor Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ============ 主题色(默认:🖋 墨水经典) ============
+       切换主题:从 references/themes.md 复制对应的 :root 块
+       整体替换这几行(--ink / --ink-rgb / --paper / --paper-rgb)
+       其他地方散落的 rgba() 都走 var(--ink-rgb) / var(--paper-rgb),无需逐处改 */
+    --ink:#030508;
+    --ink-rgb:3,5,8;
+    --paper:#e4eaf6;
+    --paper-rgb:228,234,246;
+    --paper-tint:#9aa8c8;
+    --ink-tint:#0c1224;
+    --meteor-accent:#7eb8ff;
+    --meteor-violet:#9d7cff;
+
+    /* ============ 字体(跨主题固定) ============ */
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --serif-en:"Playfair Display","Source Serif 4",Georgia,serif;
+    --serif-body-en:"Source Serif 4",Georgia,serif;
+    --serif-zh:"Noto Serif SC",source-han-serif-sc,serif;
+    --sans-zh:"Noto Sans SC",source-han-sans-sc,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--paper);font-family:var(--sans-zh);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+  /* ============ WebGL 双背景 ============ */
+  canvas.bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block;transition:opacity 1.2s ease}
+  canvas#bg-light{opacity:0}
+  canvas#bg-dark{opacity:1}
+  body.light-bg canvas#bg-light{opacity:1}
+  body.light-bg canvas#bg-dark{opacity:0}
+  body.low-power canvas.bg{display:none!important}
+
+  /* ============ Deck 容器 + 翻页 ============ */
+  /* width: NSLIDES * 100vw，会在 JS 里动态矫正 */
+  #deck{position:fixed;inset:0;width:10000vw;height:100vh;display:flex;flex-wrap:nowrap;transition:transform .9s cubic-bezier(.77,0,.175,1);z-index:10;will-change:transform}
+  .slide{width:100vw;height:100vh;flex:0 0 100vw;position:relative;padding:6vh 6vw 10vh 6vw;display:flex;flex-direction:column;overflow:hidden}
+  .slide.light{color:var(--ink);background:var(--paper)}
+  .slide.dark{color:var(--paper);background:var(--ink)}
+
+  /* 默认页：遮罩较厚，保证文字可读 */
+  .slide::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;transition:background .7s ease}
+  .slide.light::before{background:rgba(var(--paper-rgb),.78);backdrop-filter:blur(3px)}
+  .slide.dark::before{background:rgba(var(--ink-rgb),.78);backdrop-filter:blur(3px)}
+  /* Hero 页：遮罩大幅降低，让 WebGL 背景明显透出 */
+  .slide.hero.light::before{background:rgba(var(--paper-rgb),.16);backdrop-filter:none}
+  .slide.hero.dark::before{background:rgba(var(--ink-rgb),.12);backdrop-filter:none}
+  /* Hero 页顶底微弱渐隐，保证 chrome/foot 区域可读 */
+  .slide.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+  .slide.hero.light::after{background:linear-gradient(180deg,rgba(var(--paper-rgb),.28) 0%,rgba(var(--paper-rgb),0) 14%,rgba(var(--paper-rgb),0) 86%,rgba(var(--paper-rgb),.28) 100%)}
+  .slide.hero.dark::after{background:linear-gradient(180deg,rgba(var(--ink-rgb),.32) 0%,rgba(var(--ink-rgb),0) 14%,rgba(var(--ink-rgb),0) 86%,rgba(var(--ink-rgb),.32) 100%)}
+
+  /* ============ Magazine chrome：顶部 meta + 底部 foot ============ */
+  .chrome{display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+  .chrome .left,.chrome .right{display:flex;gap:2.4em;align-items:center}
+  .chrome .sep{width:40px;height:1px;background:currentColor;opacity:.4}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55}
+  .foot .title{font-family:var(--serif-zh);font-weight:400;letter-spacing:.05em;text-transform:none;opacity:.75;font-size:13px}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;padding:6px 14px;border:1px solid currentColor;opacity:.85}
+  .rule{width:100%;height:1px;background:currentColor;opacity:.25;margin:3vh 0}
+  .rule.v{width:1px;height:100%;margin:0}
+
+  /* ============ 字体规则 ============
+     · 衬线（Noto Serif SC / Playfair）：大标题、重点金句、数字
+     · 非衬线（Noto Sans SC）：正文描述、body、补充说明
+     · 等宽（IBM Plex Mono）：kicker、meta 小标签、foot 右侧
+  */
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;opacity:.6;margin-bottom:2.6vh}
+  .display{font-family:var(--serif-en);font-weight:700;font-size:11vw;line-height:.92;letter-spacing:-.025em}
+  .display-zh{font-family:var(--serif-zh);font-weight:700;font-size:7.8vw;line-height:1.04;letter-spacing:-.005em}
+  .h1-zh{font-family:var(--serif-zh);font-weight:700;font-size:4.6vw;line-height:1.12;letter-spacing:-.005em}
+  .h2-zh{font-family:var(--serif-zh);font-weight:600;font-size:3.2vw;line-height:1.2;letter-spacing:0}
+  .h3-zh{font-family:var(--serif-zh);font-weight:500;font-size:1.9vw;line-height:1.35}
+  .body-zh{font-family:var(--sans-zh);font-weight:400;font-size:max(15px,1.22vw);line-height:1.75;opacity:.82;letter-spacing:.01em}
+  .body-serif{font-family:var(--serif-zh);font-weight:400;font-size:max(15px,1.3vw);line-height:1.65;opacity:.88}
+  .lead{font-family:var(--serif-zh);font-weight:400;font-size:1.9vw;line-height:1.4;opacity:.85}
+  .meta{font-family:var(--mono);font-size:max(11px,.88vw);letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+  .big-num{font-family:var(--serif-en);font-weight:800;font-size:10vw;line-height:.85;letter-spacing:-.03em;font-feature-settings:"tnum"}
+  .mid-num{font-family:var(--serif-en);font-weight:700;font-size:5.5vw;line-height:.88;letter-spacing:-.02em;font-feature-settings:"tnum"}
+  .ghost{font-family:var(--serif-en);font-weight:900;font-size:34vw;line-height:.8;opacity:.06;letter-spacing:-.04em;position:absolute;font-feature-settings:"tnum"}
+  em{font-style:italic;font-family:var(--serif-en)}
+  .en{font-family:var(--serif-en);font-style:italic;font-weight:500}
+
+  /* ============ 布局工具 ============ */
+  .col{display:flex;flex-direction:column;gap:2.4vh}
+  .row{display:flex;align-items:center;gap:3vw}
+  .grid-6{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4vw 6vw;flex:1;align-content:center;padding:2vh 0}
+  .grid-9{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3vh 4vw;flex:1;align-content:center}
+  .grid-4{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4vh 6vw;flex:1;align-content:center}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:4vw;flex:1;align-content:center}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:4vw;flex:1;align-items:center}
+  .split-55{display:grid;grid-template-columns:55fr 45fr;gap:5vw;flex:1;align-items:stretch}
+  .fill{flex:1}
+  .center{align-items:center;justify-content:center;text-align:center}
+  .bottom-left{position:absolute;left:6vw;bottom:9vh;max-width:50vw}
+  .bottom-right{position:absolute;right:6vw;bottom:9vh;max-width:50vw;text-align:right}
+  .top-right{position:absolute;right:6vw;top:6vh;text-align:right}
+
+  /* ============ Stat（数字矩阵） ============ */
+  .stat{display:flex;flex-direction:column;gap:1vh;align-items:flex-start}
+  .stat .n{font-family:var(--serif-en);font-weight:800;font-size:8vw;line-height:.88;letter-spacing:-.03em;font-feature-settings:"tnum"}
+  .stat .l{font-family:var(--sans-zh);font-size:max(13px,1.05vw);opacity:.7;margin-top:1vh;font-weight:400;line-height:1.5}
+  .stat .m{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.5;margin-bottom:.2vh}
+
+  /* ============ Callout（引用框） ============ */
+  .callout{padding:3vh 2.4vw;border-left:3px solid currentColor;position:relative;font-family:var(--serif-zh);font-size:max(15px,1.2vw);line-height:1.55;opacity:.92}
+  .slide.light .callout{background:rgba(var(--ink-rgb),.05)}
+  .slide.dark .callout{background:rgba(var(--paper-rgb),.06)}
+  .callout .cite{display:block;margin-top:1.6vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+  .callout .q-big{font-family:var(--serif-zh);font-weight:600;font-size:max(17px,1.6vw);line-height:1.42}
+
+  /* ============ Platform（平台卡） ============ */
+  .plat{display:flex;flex-direction:column;justify-content:flex-end;padding:2vh 0;border-top:1px solid currentColor;border-color:rgba(127,127,127,.35)}
+  .plat .name{font-family:var(--serif-zh);font-weight:700;font-size:1.8vw;margin-bottom:.6vh}
+  .plat .nb{font-family:var(--serif-en);font-weight:700;font-size:3.2vw;letter-spacing:-.02em;line-height:1;font-feature-settings:"tnum"}
+  .plat .sub{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.55;margin-top:.6vh}
+  .plat .fill{font-family:var(--sans-zh);font-weight:300;font-size:2.4vw;opacity:.28;letter-spacing:-.01em;line-height:1}
+
+  /* ============ Rowline（表格行） ============ */
+  .rowline{display:grid;grid-template-columns:1fr 2fr 1fr;gap:2vw;padding:2.2vh 0;border-top:1px solid currentColor;align-items:center;border-color:rgba(127,127,127,.25)}
+  .rowline:last-child{border-bottom:1px solid currentColor;border-color:rgba(127,127,127,.25)}
+  .rowline .k{font-family:var(--serif-zh);font-weight:700;font-size:1.7vw}
+  .rowline .v{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.2vw);opacity:.85;line-height:1.55}
+  .rowline .m{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;justify-self:end}
+
+  /* ============ Pillar（支柱卡片） ============ */
+  .pillar{display:flex;flex-direction:column;gap:1.8vh}
+  .pillar .ic{font-family:var(--serif-en);font-style:italic;font-size:2.6vw;opacity:.45;font-weight:400}
+  .pillar .ic svg{width:2.8vw;height:2.8vw;stroke-width:1.2;opacity:.7}
+  .pillar .t{font-family:var(--serif-zh);font-weight:700;font-size:2.4vw;line-height:1.1}
+  .pillar .d{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.1vw);opacity:.76;line-height:1.6}
+
+  /* ============ Signature / Highlight ============ */
+  .sign{font-family:var(--serif-en);font-style:italic;font-weight:500;font-size:2vw;opacity:.7}
+  .hi{position:relative;display:inline}
+  .slide.dark .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--paper-rgb),.15);z-index:-1}
+  .slide.light .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--ink-rgb),.08);z-index:-1}
+
+  /* ============ Icons（Lucide via CDN） ============ */
+  .ico{width:1em;height:1em;display:inline-block;vertical-align:-.12em;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .ico-lg,.ico-md,.ico-sm{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+  .ico-lg{width:2.6vw;height:2.6vw;stroke-width:1.2;display:inline-block}
+  .ico-md{width:1.8vw;height:1.8vw;stroke-width:1.3;display:inline-block;vertical-align:-.4em}
+  .ico-sm{width:1.1vw;height:1.1vw;stroke-width:1.4;display:inline-block;vertical-align:-.15em;opacity:.7}
+
+  /* ============ 图片占位（虚线框，提示设计师位置） ============ */
+  .img-slot{border:1.5px dashed rgba(127,127,127,.4);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1vh;padding:2vh 2vw;font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;opacity:.55;position:relative;aspect-ratio:16/9;width:100%;max-height:56vh;margin-inline:auto;box-sizing:border-box}
+  .img-slot::before{content:"";position:absolute;inset:8px;border:1px solid currentColor;opacity:.2}
+  .img-slot .plus{font-size:2vw;font-weight:300;opacity:.5;letter-spacing:0}
+  .img-slot .label{position:relative;z-index:2;text-align:center}
+  .img-slot.r-4x3{aspect-ratio:4/3}
+  .img-slot.r-3x2{aspect-ratio:3/2}
+  .img-slot.r-1x1{aspect-ratio:1/1}
+
+  /* ============ 图片实填框（关键：固定高度 + 只裁底部） ============
+     重要约束：高度用内联 height:Nvh 精确控制，不要用 aspect-ratio（会撑破布局）
+     object-position:top center 保证严禁裁剪顶部和左右，只裁剪底部
+  */
+  .frame-img{overflow:hidden;position:relative;background:rgba(0,0,0,.04);box-sizing:border-box;width:100%;border-radius:4px}
+  .slide.dark .frame-img{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
+  .frame-img > img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+  .frame-img.fit-contain > img{object-fit:contain;object-position:center center}
+  .frame-img.r-16x9{aspect-ratio:16/9;max-height:64vh}
+  .frame-img.r-16x10{aspect-ratio:16/10;max-height:56vh}
+  .frame-img.r-4x3{aspect-ratio:4/3;max-height:56vh}
+  .frame-img.r-3x2{aspect-ratio:3/2;max-height:46vh}
+  .frame-img.r-3x4{aspect-ratio:3/4;max-height:60vh}
+  .frame-img.r-1x1{aspect-ratio:1/1;max-height:50vh}
+  .frame-img.h-16{height:16vh}
+  .frame-img.h-18{height:18vh}
+  .frame-img.h-22{height:22vh}
+  .frame-img.h-26{height:26vh}
+  .frame-img.h-28{height:28vh}
+  .frame-cap{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;margin-top:.8vh;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.72}
+  .frame-cap .pf{font-family:var(--serif-zh);font-weight:600;font-size:max(13px,1vw);letter-spacing:.04em;text-transform:none;opacity:.94}
+  .frame-cap .nb{font-family:var(--serif-en);font-style:italic;font-size:max(15px,1.2vw);letter-spacing:.02em;text-transform:none;opacity:.88}
+  .frame-cap .idx{font-family:var(--mono);opacity:.5}
+  figure.tile{display:flex;flex-direction:column;margin:0;min-width:0}
+  figure.tile > .frame-img{flex:0 0 auto}
+
+  /* ============ 导航 ============ */
+  #nav{position:fixed;left:50%;bottom:2.6vh;transform:translateX(-50%);z-index:30;display:flex;gap:10px;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #nav .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s ease;border:0;padding:0}
+  #nav .dot:hover{background:rgba(255,255,255,.5);transform:scale(1.15)}
+  #nav .dot.active{background:rgba(255,255,255,.95);width:22px;border-radius:999px}
+  body.light-bg #nav{background:rgba(255,255,255,.25)}
+  body.light-bg #nav .dot{background:rgba(var(--ink-rgb),.25)}
+  body.light-bg #nav .dot.active{background:rgba(var(--ink-rgb),.9)}
+  #hint{position:fixed;bottom:3vh;right:3vw;z-index:30;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.4;mix-blend-mode:difference;color:#aaa}
+  body.low-power #hint{opacity:.72;color:var(--paper);mix-blend-mode:normal}
+  body.light-bg.low-power #hint{color:var(--ink)}
+
+  /* ============================================================
+     ============ LAYOUTS API · 面向 agent 的类（v2）============
+     所有 layouts.md 中的骨架都基于下面这套命名。
+     如果你在 layouts.md 里看到某个类，它必须在下面有定义。
+     ============================================================ */
+
+  /* ---------- .frame：每页主内容容器 ---------- */
+  .frame{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  /* 当 .frame 同时加了 grid 类时，grid 的 display:grid 覆盖 flex */
+  .frame.grid-2-7-5,
+  .frame.grid-2-6-6,
+  .frame.grid-2-8-4,
+  .frame.grid-3-3,
+  .frame.grid-6{display:grid}
+
+  /* ---------- 标题层级（API 名称，衬线为主） ---------- */
+  .h-hero{
+    font-family:var(--serif-zh);
+    font-weight:900;
+    font-size:10vw;
+    line-height:.96;
+    letter-spacing:-.02em;
+  }
+  .h-xl{
+    font-family:var(--serif-zh);
+    font-weight:700;
+    font-size:6.2vw;
+    line-height:1.08;
+    letter-spacing:-.01em;
+  }
+  .h-sub{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:3.1vw;
+    line-height:1.25;
+    letter-spacing:0;
+    opacity:.7;
+  }
+  .h-md{
+    font-family:var(--serif-zh);
+    font-weight:600;
+    font-size:2.3vw;
+    line-height:1.3;
+  }
+  /* 英文标题专用（Playfair 衬线） */
+  .h-hero-en,.h-xl-en{font-family:var(--serif-en);letter-spacing:-.025em}
+
+  /* ---------- lead 引语 ---------- */
+  .lead{
+    font-family:var(--serif-zh);
+    font-weight:400;
+    font-size:1.75vw;
+    line-height:1.5;
+    opacity:.86;
+  }
+
+  /* ---------- meta-row 底部元数据 ---------- */
+  .meta-row{
+    display:flex;
+    gap:1.2em;
+    align-items:baseline;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:max(12px,.92vw);
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- stat-card（数据大字报用） ---------- */
+  .stat-card{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    align-items:flex-start;
+    padding-top:1.6vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.3);
+  }
+  .stat-card .stat-label{
+    font-family:var(--mono);
+    font-size:max(10px,.78vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.55;
+  }
+  .stat-card .stat-nb{
+    font-family:var(--serif-en);
+    font-weight:800;
+    font-size:5.8vw;
+    line-height:.9;
+    letter-spacing:-.03em;
+    font-feature-settings:"tnum";
+    margin-top:.4vh;
+  }
+  .stat-card .stat-nb .stat-unit{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:.38em;
+    letter-spacing:0;
+    opacity:.72;
+    margin-left:.14em;
+  }
+  .stat-card .stat-note{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(13px,1.05vw);
+    line-height:1.5;
+    opacity:.72;
+    margin-top:.6vh;
+  }
+  /* 当 stat-card 用于 grid-4（2x2），数字适度放大；若页面有标题+引文在上方，可内联 style 覆盖为更小值 */
+  .grid-4 .stat-card .stat-nb{font-size:5vw}
+  /* 当只有 3 个，字也可以稍大 */
+  .grid-3 .stat-card .stat-nb{font-size:6.8vw}
+
+  /* ---------- pipeline（流水线） ---------- */
+  .pipeline-section{
+    margin-top:4.4vh;
+    padding-top:2.8vh;
+    border-top:1px dashed rgba(127,127,127,.32);
+  }
+  .pipeline-section:first-of-type{
+    border-top:0;
+    padding-top:0;
+    margin-top:3vh;
+  }
+  .pipeline-label{
+    font-family:var(--mono);
+    font-size:max(11px,.85vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.62;
+    margin-bottom:2.2vh;
+  }
+  .pipeline{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:1.2vw;
+  }
+  .pipeline[data-cols="3"]{grid-template-columns:repeat(3,1fr)}
+  .pipeline[data-cols="4"]{grid-template-columns:repeat(4,1fr)}
+  .pipeline[data-cols="6"]{grid-template-columns:repeat(6,1fr)}
+  .step{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    padding-top:1.4vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.35);
+  }
+  .step-nb{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-weight:500;
+    font-size:1.15vw;
+    opacity:.45;
+  }
+  .step-title{
+    font-family:var(--sans-zh);
+    font-weight:700;
+    font-size:1.55vw;
+    letter-spacing:.01em;
+    line-height:1.2;
+  }
+  .step-desc{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(12px,.95vw);
+    line-height:1.45;
+    opacity:.72;
+  }
+
+  /* ---------- 网格（layouts.md 所用） ---------- */
+  /* 这些类独立挂到任何容器上都能生效，不依赖 .frame 复合选择器 */
+  .grid-2-7-5{display:grid;grid-template-columns:7fr 5fr;gap:3vw 4vh;align-items:start}
+  .grid-2-6-6{display:grid;grid-template-columns:1fr 1fr;gap:3vw 4vh;align-items:start}
+  .grid-2-8-4{display:grid;grid-template-columns:8fr 4fr;gap:3vw 4vh;align-items:start}
+  .grid-3-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-auto-rows:minmax(0,1fr);
+    gap:2.4vh 2vw;
+  }
+  /* grid-6 已在旧样式里定义为 3x2，这里仅补 align */
+
+  /* ---------- 图片 frame-img（layouts.md 主命名） ---------- */
+  /* 在旧样式里已定义，这里补 img-cap 命名别名与增强 */
+  figure.frame-img{margin:0;display:flex;flex-direction:column;min-width:0}
+  .img-cap{
+    display:block;
+    margin-top:.8vh;
+    font-family:var(--mono);
+    font-size:max(10px,.8vw);
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+  /* callout src 命名别名 */
+  .callout-src{
+    display:block;
+    margin-top:1.6vh;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- chrome & foot 补位（layouts.md 简单写法） ---------- */
+  .chrome{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.2em;text-transform:uppercase;opacity:.62}
+  .foot{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.18em;text-transform:uppercase;opacity:.5}
+
+  /* ============ 动效系统(Motion One 驱动) ============
+     所有 [data-anim] 元素默认隐藏,进入页面时由 JS 逐个揭示。
+     - cascade(默认):按 DOM 顺序 stagger 120ms 淡入 + y:16→0
+     - hero(hero 页自动):慢一点的 stagger 180ms
+     - quote(含 [data-anim="line"]):逐行 600ms 淡入
+     - directional(含 [data-anim="left|right"]):左→分隔线→右
+     - pipeline(data-animate="pipeline"):Space/→ 手动推进
+     Motion One 没加载成功时(CDN 断 + 本地丢),所有 [data-anim] 会兜底显示。
+  */
+  [data-anim]{opacity:1}
+  body.motion-ready [data-anim]{opacity:0}
+  body.motion-ready [data-anim="left"]{transform:translateX(-24px)}
+  body.motion-ready [data-anim="right"]{transform:translateX(24px)}
+  body.motion-ready [data-anim="line"]{opacity:0;transform:translateY(10px)}
+  body.motion-ready [data-animate="pipeline"] [data-anim]{opacity:.15}
+  body.low-power #deck{transition:none!important}
+  body.low-power *,
+  body.low-power *::before,
+  body.low-power *::after{animation:none!important;transition:none!important}
+  body.low-power.motion-ready [data-anim],
+  body.low-power [data-anim]{opacity:1!important;transform:none!important}
+
+  /* ---------- 响应式降级 ---------- */
+  @media (max-width:900px){
+    .display{font-size:16vw}
+    .display-zh{font-size:12vw}
+    .h1-zh{font-size:7vw}
+    .h-hero{font-size:14vw}
+    .h-xl{font-size:9vw}
+    .pipeline{grid-template-columns:repeat(2,1fr)}
+    .grid-2-7-5,.grid-2-6-6,.grid-2-8-4{grid-template-columns:1fr}
+  }
+
+  body.meteor-deck{background:#030508}
+  body.meteor-deck.low-power{background:#030508!important}
+  body.meteor-deck.low-power canvas.bg{display:block!important}
+  body.meteor-deck.low-power canvas#bg-light{display:none!important}
+  body.meteor-deck.low-power canvas#meteor-layer{display:none!important}
+  canvas#meteor-layer{z-index:1;pointer-events:none;opacity:.92}
+  body.meteor-deck canvas#bg-light{opacity:0!important}
+  body.meteor-deck canvas#bg-dark{opacity:1!important}
+  body.meteor-deck.light-bg canvas#bg-light{opacity:0!important}
+  .slide.light,.slide.dark{color:var(--paper);background:transparent}
+  .slide::before{background:rgba(3,5,8,.52)!important;backdrop-filter:blur(6px)}
+  .slide.hero::before{background:rgba(3,5,8,.28)!important;backdrop-filter:blur(2px)}
+  .slide.hero::after{background:linear-gradient(180deg,rgba(3,5,8,.55) 0%,rgba(3,5,8,0) 16%,rgba(3,5,8,0) 84%,rgba(3,5,8,.55) 100%)!important}
+  .display-zh,.h1-zh{text-shadow:0 0 40px rgba(126,184,255,.22),0 0 80px rgba(157,124,255,.12)}
+  .kicker{color:var(--meteor-accent);opacity:.75}
+  .deck-layout-4060{display:grid;grid-template-columns:40fr 60fr;gap:3vw;flex:1;align-items:stretch}
+  .deck-split{align-items:stretch;padding-top:1.5vh;flex:1;min-height:0}
+  .deck-text{gap:1.1vh;max-height:76vh;overflow:auto;padding-right:.6vw;justify-content:flex-start}
+  .deck-text::-webkit-scrollbar{width:3px}
+  .deck-text::-webkit-scrollbar-thumb{background:rgba(126,184,255,.25);border-radius:2px}
+  .split-slide .h1-zh{font-size:2.6vw;line-height:1.15;margin-bottom:.2vh}
+  .deck-lead{font-size:max(13px,.95vw)!important;line-height:1.55!important;opacity:.84;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .deck-detail{font-size:max(12px,.88vw)!important;line-height:1.5!important;opacity:.72;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .deck-bullets{margin:.2vh 0 0 1em;line-height:1.45;font-size:max(12px,.88vw)!important;opacity:.82}
+  .deck-bullets li{margin:.25em 0}
+  .chart-panel{background:rgba(8,14,32,.78);color:#dce6f8;border:1px solid rgba(126,184,255,.2);border-radius:10px;padding:8px 10px 6px;min-height:68vh;height:100%;display:flex;flex-direction:column;box-shadow:0 0 48px rgba(126,184,255,.1),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(12px)}
+  .chart-panel-head{color:rgba(220,230,255,.55)}
+  .deck-chart{flex:1;min-height:62vh;width:100%}
+  .deck-chart.wide{min-height:64vh}
+  .deck-chart.matrix{min-height:66vh}
+  .deck-chart.facet{min-height:66vh}
+  #story-drawer{background:rgba(6,10,24,.94);color:var(--paper);border:1px solid rgba(126,184,255,.18);box-shadow:8px 0 48px rgba(0,0,0,.45),0 0 30px rgba(126,184,255,.08)}
+  #genre-showcase{background:rgba(6,10,24,.94);color:var(--paper);border:1px solid rgba(126,184,255,.18);box-shadow:8px 0 48px rgba(0,0,0,.45),0 0 24px rgba(157,124,255,.1)}
+  #genre-showcase .gs-track{color:var(--meteor-accent)}
+  #genre-showcase .gs-pl-item{border-color:rgba(126,184,255,.15)}
+  #genre-showcase .gs-pl-item:hover,#genre-showcase .gs-pl-item.is-active{background:rgba(126,184,255,.12);border-color:rgba(126,184,255,.45)}
+  #genre-showcase .gs-pl-item.is-active .gs-pl-play,#genre-showcase .gs-pl-item:hover .gs-pl-play{color:var(--meteor-accent)}
+  #genre-showcase .gs-story{border-top-color:rgba(126,184,255,.12)}
+  #music-bar{background:rgba(6,10,24,.92);border:1px solid rgba(126,184,255,.2);box-shadow:0 12px 40px rgba(0,0,0,.4),0 0 24px rgba(126,184,255,.12)}
+  #nav{background:rgba(6,10,24,.45);border:1px solid rgba(126,184,255,.15);box-shadow:0 0 24px rgba(126,184,255,.08)}
+  #nav .dot{background:rgba(126,184,255,.25)}
+  #nav .dot:hover{background:rgba(126,184,255,.55)}
+  #nav .dot.active{background:linear-gradient(90deg,var(--meteor-accent),var(--meteor-violet));box-shadow:0 0 12px rgba(126,184,255,.5)}
+  #hint{color:rgba(180,200,255,.45);mix-blend-mode:normal}
+  .ch1-genre .deck-lead{-webkit-line-clamp:3}
+  .ch1-genre .deck-text{display:grid;grid-template-rows:auto auto auto 1fr;min-height:0}
+  #genre-showcase{position:fixed;left:0;bottom:10vh;top:auto;z-index:185;width:min(300px,32vw);max-height:58vh;overflow:auto;overflow-x:hidden;transform:translateX(-108%);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s;opacity:0;pointer-events:none}
+  #genre-showcase.is-visible{transform:translateX(0);opacity:1;pointer-events:auto}
+  #genre-showcase .gs-close{position:absolute;top:.6vh;right:.5vw;z-index:2;background:rgba(126,184,255,.2);border:none;color:#fff;font-size:18px;line-height:1;width:28px;height:28px;border-radius:50%;cursor:pointer;opacity:.85}
+  #genre-showcase .gs-img-wrap{height:22vh;min-height:130px;background:#0a1020 center/cover no-repeat}
+  #genre-showcase .gs-cap{padding:1.4vh 1.1vw 1.6vh}
+  #genre-showcase .gs-name{font-family:var(--serif-zh);font-size:max(18px,1.25vw);font-weight:600;line-height:1.2}
+  #genre-showcase .gs-stats{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-top:.5vh}
+  #genre-showcase .gs-blurb{font-size:max(12px,.85vw);line-height:1.5;opacity:.78;margin-top:.7vh}
+  #genre-showcase .gs-story{font-size:max(11px,.82vw);line-height:1.5;opacity:.72;margin-top:.8vh;padding-top:.8vh}
+  #genre-showcase .gs-story-head{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.5;margin-bottom:.35vh}
+  #genre-showcase.gs-mode-playlist{width:min(320px,34vw);max-height:62vh}
+  #genre-showcase .gs-playlist{display:none;margin-top:.6vh;max-height:42vh;overflow-y:auto;padding-right:.3vw}
+  #genre-showcase.gs-mode-playlist .gs-playlist{display:block}
+  #genre-showcase .gs-pl-item{display:block;width:100%;text-align:left;padding:.65vh .55vw;margin-bottom:.4vh;background:transparent;color:inherit;cursor:pointer;border-radius:4px;transition:background .2s,border-color .2s}
+  #genre-showcase .gs-pl-main{display:flex;align-items:center;justify-content:space-between;gap:.5vw}
+  #genre-showcase .gs-pl-genre{font-family:var(--serif-zh);font-size:max(13px,.92vw);font-weight:600;line-height:1.25}
+  #genre-showcase .gs-pl-play{font-size:11px;opacity:.45;flex-shrink:0}
+  #genre-showcase .gs-pl-meta{display:block;font-size:max(10px,.78vw);opacity:.55;margin-top:.25vh;line-height:1.35}
+  #genre-showcase .gs-pl-count{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.08em;opacity:.4;margin-top:.15vh}
+  #story-drawer{position:fixed;left:0;top:50%;z-index:180;width:min(340px,36vw);max-height:72vh;overflow:auto;padding:2.2vh 1.4vw 2vh 1.6vw;border-left:none;border-radius:0 10px 10px 0;transform:translate(-108%,-50%);transition:transform .5s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(14px);pointer-events:none;opacity:0}
+  #story-drawer.is-on{transform:translate(0,-50%);pointer-events:auto;opacity:1}
+  #story-drawer .sd-close{position:absolute;top:.8vh;right:.6vw;background:transparent;border:none;color:inherit;font-size:20px;line-height:1;cursor:pointer;opacity:.45;padding:4px 8px}
+  #story-drawer .sp-title{font-family:var(--serif-zh);font-size:max(16px,1.1vw);font-weight:600;margin-bottom:.6vh;padding-right:1.4em}
+  #story-drawer .sp-head{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-bottom:.4vh}
+  #story-drawer p{font-size:max(12px,.88vw);line-height:1.55;margin:.35vh 0;opacity:.88}
+  #story-drawer .sp-num{font-family:var(--mono);font-size:10px;opacity:.5;margin-top:.6vh}
+  #music-bar{position:fixed;right:2.2vw;bottom:2.2vh;transform:translateY(120%);width:min(340px,42vw);z-index:200;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:start;transition:transform .45s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(12px);border-radius:8px}
+  #music-bar.is-visible{transform:translateY(0)}
+  .mp-track{font-family:var(--serif-zh);font-size:14px;line-height:1.25;grid-column:1}
+  .mp-artist{font-family:var(--mono);font-size:9px;letter-spacing:.12em;opacity:.55;margin-top:2px;grid-column:1}
+  .mp-mode{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.4;grid-column:1;margin-top:2px}
+  .mp-actions{display:flex;gap:6px;grid-column:2;grid-row:1/3}
+  .mp-btn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(126,184,255,.35);color:inherit;padding:4px 8px;cursor:pointer;border-radius:4px}
+  #music-audio,#music-spotify{display:none}
+  #music-spotify{width:100%;height:72px;border:none;border-radius:6px}
+  #music-spotify:not(.hidden){display:block;grid-column:1/-1}
+  #music-bar:has(#music-spotify:not(.hidden)){grid-template-rows:auto auto auto}
+
+</style>
+</head>
+<body class="meteor-deck">
+<script>
+  (function(){
+    const KEY = 'guizang-ppt-low-power';
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const stored = localStorage.getItem(KEY);
+    window.__lowPowerMode = stored === '1' || (stored === null && reduced);
+    function updateHint(){
+      const hint = document.getElementById('hint');
+      if(hint) hint.textContent = `← → 翻页 · B ${window.__lowPowerMode ? '动态' : '静态'} · ESC 索引`;
+    }
+    window.__setLowPowerMode = function(on, opts={}){
+      window.__lowPowerMode = !!on;
+      document.body.classList.toggle('low-power', window.__lowPowerMode);
+      if(opts.persist !== false) localStorage.setItem(KEY, window.__lowPowerMode ? '1' : '0');
+      if(window.__lowPowerMode && document.getAnimations){
+        document.getAnimations().forEach(a=>a.cancel());
+      }
+      updateHint();
+      dispatchEvent(new CustomEvent('ppt-low-power-change', {detail:{on:window.__lowPowerMode}}));
+      if(window.__playSlide) window.__playSlide(window.__currentSlideIndex || 0);
+    };
+    document.body.classList.toggle('low-power', window.__lowPowerMode);
+    addEventListener('DOMContentLoaded', updateHint, {once:true});
+  })();
+</script>
+
+<canvas id="meteor-layer" class="bg"></canvas>
+<canvas id="bg-dark" class="bg"></canvas>
+<canvas id="bg-light" class="bg"></canvas>
+<div id="hint">← → 翻页 · B 静态 · ESC 索引</div>
+
+<div id="deck">
+
+<!-- ============================================================
+     SLIDES 插入区 · 在此处填充所有 <section class="slide ..."> 页面
+     每页模板参考 references/page-patterns.md
+     页面组件参考 references/components.md
+     ============================================================ -->
+
+
+<section class="slide hero dark" data-slide="0" data-theme="dark">
+  <div class="chrome"><div>Meteor Edition · 情绪脉动</div><div>01 / 11</div></div>
+  <div class="frame" style="display:grid;gap:3.2vh;align-content:center;min-height:78vh">
+    <div class="kicker" data-anim>Data Visualization · Final Project</div>
+    <h1 class="display-zh" data-anim>10,000次心跳的采样</h1>
+    <h2 class="h2-zh" data-anim style="opacity:.88">全球数字音乐的「情绪脉动」报告</h2>
+    <p class="lead" style="max-width:64vw" data-anim>
+      基于 Spotify 全球 Top 10,000 热门歌曲数据集，以 Tableau 工作簿为视觉基准，
+      复刻 9 组交互图表，讲述从<strong>流派王权交替</strong>到<strong>情绪象限</strong>、
+      从<strong>黄金公式</strong>到<strong>文化反叛</strong>的完整数据叙事。
+    </p>
+    <div class="meta-row" data-anim style="font-family:var(--mono);font-size:12px;letter-spacing:.14em;opacity:.65;display:flex;gap:1.2em;margin-top:1vh">
+      <span>2024080126 黄之颖</span><span>·</span><span>深圳大学</span><span>·</span><span>数据可视化 2026</span>
+    </div>
+  </div>
+  <div class="foot"><div>悬停试听 · ← → 翻页 · B 切换动态</div><div>2026</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide ch1-genre" data-chart="genre_market" data-chart-id="chart-1" data-slide="1">
+  <div class="chrome"><div>Act I · 宏观流派</div><div>02 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 1 章</div>
+      <h2 class="h1-zh" data-anim>王权交替</h2>
+      <p class="body-zh deck-lead" data-anim>纵观整个 2024 年音乐流派的市场占有率，<strong>Pop（流行乐）</strong>以绝对优势高居第一，<strong>Rock（摇滚乐）</strong>稳居第二。然而，这两个流派的命运曲线在历史的长河中发生过一次历史性的「王权交替」。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>流派市场占有率</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-1" class="deck-chart "></div>
+    </div>
+  </div>
+  <div class="foot"><div>流派市场占有率</div><div>Genre Market</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="genre_trend" data-chart-id="chart-2" data-slide="2">
+  <div class="chrome"><div>Act II · 历史趋势</div><div>03 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 2 章</div>
+      <h2 class="h1-zh" data-anim>Pop 反超 Rock</h2>
+      <p class="body-zh deck-lead" data-anim>在 2000 年代初，Rock 依然是最受欢迎的流派。但在 <strong>2005 年左右</strong>，Pop 的热度曲线拔地而起，正式反超了 Rock。到了 2024 年，不仅 Pop 的受欢迎程度达到了 59,015 的峰值，<strong>几乎所有流派的歌曲数量和受欢迎程度都呈现了爆发式的指数级增长</strong>。</p>
+      <p class="body-zh deck-detail" data-anim>流媒体时代的彻底普及与 2020 年疫情共同推高了 2024 年的数据峰值——实体唱片的物理门槛被消除，TikTok 与 Spotify 让全球听众随时触达任何流派。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>流派受欢迎程度变化趋势</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-2" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>流派受欢迎程度变化趋势</div><div>Genre Trend</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="artist_scatter" data-chart-id="chart-3" data-slide="3">
+  <div class="chrome"><div>Act III · 顶流艺人</div><div>04 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 3 章</div>
+      <h2 class="h1-zh" data-anim>顶流镜像</h2>
+      <p class="body-zh deck-lead" data-anim>当我们将目光从宏观流派拉近到微观艺人时，发现了一个极其有趣的现象：<strong>顶流艺人的热度轨迹，正是流派繁荣的完美镜像。</strong></p>
+      <ul class="deck-bullets body-zh"><li><strong>Taylor Swift</strong> — Pop 乐无可争议的代言人，粉丝量 16,074M+</li><li><strong>Bad Bunny</strong> — 引领 Latin 在全球流媒体上的文化逆袭</li><li><strong>Drake</strong> 与 <strong>Playboi Carti</strong> — 伫立在 HipHop 的山巅</li></ul>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>粉丝量与艺人热度</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-3" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>粉丝量与艺人热度</div><div>Artist Mirror</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="top100_golden" data-chart-id="chart-4" data-slide="4">
+  <div class="chrome"><div>Act IV · 音频指纹</div><div>05 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 4 章</div>
+      <h2 class="h1-zh" data-anim>黄金公式</h2>
+      <p class="body-zh deck-lead" data-anim>我们对榜单上 Top 100 的热歌进行了音频物理属性分析，发现能红遍全球的歌曲在四个维度上高度相似：</p>
+      <ul class="deck-bullets body-zh"><li><strong>中速流行/快板高速</strong> — Tempo 120-121 左右</li><li><strong>中高能量</strong> — Energy 0.61-0.64</li><li><strong>标准流媒体强律动</strong> — Danceability 0.62-0.64</li></ul>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Top 100 热歌音频属性</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-4" class="deck-chart matrix"></div>
+    </div>
+  </div>
+  <div class="foot"><div>Top 100 热歌音频属性</div><div>Golden Ratio</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="top10_golden" data-chart-id="chart-5" data-slide="5">
+  <div class="chrome"><div>Act V · 异类样本</div><div>06 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 5 章</div>
+      <h2 class="h1-zh" data-anim>异类碧梨</h2>
+      <p class="body-zh deck-lead" data-anim>但是，当我们放大到 Top 10 的歌手时，在相似的流行大潮中，却出现了一个巨大的「异类」——<strong>Billie Eilish（碧梨）</strong>。</p>
+      <p class="body-zh deck-detail" data-anim>碧梨在 2016 年带着她的首支单曲杀入战场，粉丝量和热度经历了爆发式增长。但她的歌，是所有人里<strong>能量最低、情绪最暗</strong>的。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Top 10 歌手黄金配比</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-5" class="deck-chart matrix"></div>
+    </div>
+  </div>
+  <div class="foot"><div>Top 10 歌手黄金配比</div><div>Outlier</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="style_distribution" data-chart-id="chart-6" data-slide="6">
+  <div class="chrome"><div>Act VI · 风格光谱</div><div>07 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 6 章</div>
+      <h2 class="h1-zh" data-anim>五种风格</h2>
+      <p class="body-zh deck-lead" data-anim>再让我们选出 5 种不同风格的代表歌手：暗黑电子流行 Billie、新金属 Linkin Park、日式流行摇滚 Mrs. GREEN APPLE、乡村流行 Taylor、复古 R&B The Weeknd。</p>
+      <p class="body-zh deck-detail" data-anim>如果想在这几个领域深耕，达到领衔水平，不妨模仿这几位代表歌手斩获高分的歌曲的音频特征。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>代表歌手作品分布</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-6" class="deck-chart wide"></div>
+    </div>
+  </div>
+  <div class="foot"><div>代表歌手作品分布</div><div>Style Matrix</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="emotion_quadrant" data-chart-id="chart-7" data-slide="7">
+  <div class="chrome"><div>Act VII · 情绪空间</div><div>08 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 7 章</div>
+      <h2 class="h1-zh" data-anim>情绪象限</h2>
+      <p class="body-zh deck-lead" data-anim>我们专门对 Taylor 和 Billie 的情绪象限进行了比较分析。数据显示，Billie 的歌普遍落在<strong>低 Energy、低 Valence</strong> 区域——也就是低能量 + 负面情绪的象限。</p>
+      <p class="body-zh deck-detail" data-anim>这恰好对应了 2016 年前后在年轻人中蔓延的「丧文化」：疲惫、焦虑、反对过度积极。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Energy × Valence</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-7" class="deck-chart "></div>
+    </div>
+  </div>
+  <div class="foot"><div>Energy × Valence</div><div>Emotion Quadrant</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="explicit_trend" data-chart-id="chart-8" data-slide="8">
+  <div class="chrome"><div>Act VIII · 文化反叛</div><div>09 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 8 章</div>
+      <h2 class="h1-zh" data-anim>文化反叛</h2>
+      <p class="body-zh deck-lead" data-anim>碧梨的成功不是孤立的，它扯下了主流文化的一角，背后映射出的是「文化反叛」开始成为全球年轻人的审美新趋势。</p>
+      <p class="body-zh deck-detail" data-anim>在不同流派的歌词中，带有 Explicit（脏话/露骨标签）的歌曲数量在近年来（尤其是 2018-2024 年）迎来了疯狂上升，HipHop 达到了 261 的顶峰，Latin（162）和 Pop（129）紧随其后。</p>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>Explicit 标签变化趋势</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-8" class="deck-chart facet"></div>
+    </div>
+  </div>
+  <div class="foot"><div>Explicit 标签变化趋势</div><div>Explicit Trend</div></div>
+</section>
+
+<section class="slide dark" data-theme="dark" split-slide" data-chart="explicit_ratio" data-chart-id="chart-9" data-slide="9">
+  <div class="chrome"><div>Act IX · 行业悖论</div><div>10 / 11</div></div>
+  <div class="deck-layout-4060 deck-split">
+    <div class="col deck-text">
+      <div class="kicker" data-anim>第 9 章</div>
+      <h2 class="h1-zh" data-anim>叛逆悖论</h2>
+      <p class="body-zh deck-lead" data-anim>最有趣的行业悖论发生在「哪些流派更叛逆」的占比分析中：在大众刻板印象里最狂躁、最应该反叛的 <strong>Rock（摇滚）</strong>，其 Explicit 占比竟然只有 <strong>13.57%</strong>。</p>
+      <ul class="deck-bullets body-zh"><li><strong>R&B（41.54%）</strong> — 根植于黑人文化对社会规范的长期抵抗</li><li><strong>Metal（35.19%）</strong> — 极端表达的另一面</li><li><strong>Latin（28.34%）</strong> — 对身体与欲望的直接表达习惯</li></ul>
+      
+    </div>
+    <div class="chart-panel" data-anim>
+      <div class="chart-panel-head">
+        <span>各流派 Explicit 占比</span>
+        <span>点击扇区 · 探索流派故事</span>
+      </div>
+      <div id="chart-9" class="deck-chart "></div>
+    </div>
+  </div>
+  <div class="foot"><div>各流派 Explicit 占比</div><div>Explicit Ratio</div></div>
+</section>
+
+<section class="slide hero dark" data-slide="10" data-theme="dark">
+  <div class="chrome"><div>Closing · 结语</div><div>11 / 11</div></div>
+  <div class="frame" style="display:grid;gap:3.5vh;align-content:center;min-height:72vh;text-align:center">
+    <div class="kicker" data-anim style="justify-self:center">Takeaway</div>
+    <h2 class="h1-zh" data-anim>音乐没有标准答案，<br><em>但有数据可循。</em></h2>
+    <p class="body-zh" style="max-width:58vw;justify-self:center;opacity:.85" data-anim>
+      从王权交替到情绪象限，从黄金公式到文化反叛——10,000 次心跳的采样，
+      让我们听见全球数字音乐的情绪脉动。
+    </p>
+    <div class="meta-row" data-anim style="justify-content:center;font-family:var(--mono);font-size:12px;letter-spacing:.16em;opacity:.6">
+      <span>谢谢</span><span>·</span><span>Q&amp;A</span>
+    </div>
+  </div>
+  <div class="foot"><div>10,000次心跳的采样</div><div>Meteor Edition</div></div>
+</section>
+
+</div>
+
+<div id="nav"></div>
+
+<script>
+/* =============== WebGL 双背景 ===============
+   深色页：Holographic Dispersion（全息色散 · 钛金暗流）—— 彩虹微扰、鼠标径向涟漪
+   浅色页：Spiral Vortex（旋转涡流 · 银色珍珠）—— domain-warp 流动、无中心
+   修改风格请参考 references/webgl-backgrounds.md
+*/
+const VS = `attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
+
+const FS_DARK = `precision highp float;
+uniform vec2 u_resolution;uniform float u_time;uniform vec2 u_mouse;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float hash2(vec2 p){return fract(sin(dot(p,vec2(269.5,183.3)))*43758.5453);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_resolution.xy;
+  vec2 p=uv*2.0-1.0;p.x*=u_resolution.x/u_resolution.y;
+  vec3 col=mix(vec3(0.01,0.015,0.04),vec3(0.04,0.03,0.10),uv.y*0.85+0.08);
+  col+=vec3(0.06,0.03,0.12)*pow(1.0-uv.y,2.0)*0.35;
+  vec2 starUV=uv*vec2(u_resolution.x/u_resolution.y,1.0)*220.0;
+  vec2 cell=floor(starUV);
+  float h=hash(cell);
+  if(h>0.985){
+    vec2 f=fract(starUV)-0.5;
+    float d=length(f);
+    float tw=0.55+0.45*sin(u_time*2.5+h*40.0);
+    col+=vec3(0.85,0.92,1.0)*exp(-d*d*80.0)*tw*((h-0.985)/0.015);
+  }
+  float neb=sin(p.x*1.8+u_time*0.08)*sin(p.y*1.4-u_time*0.06);
+  col+=vec3(0.12,0.08,0.22)*neb*0.04;
+  vec2 m=u_mouse*2.0-1.0;m.x*=u_resolution.x/u_resolution.y;
+  col+=vec3(0.15,0.25,0.55)*exp(-length(p-m)*2.2)*0.12;
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const FS_LIGHT = `precision highp float;
+uniform vec2 u_resolution;uniform float u_time;uniform vec2 u_mouse;
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_resolution.xy;
+  vec3 col=mix(vec3(0.02,0.03,0.07),vec3(0.05,0.04,0.11),uv.y);
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const mouse={x:0.5,y:0.5};
+addEventListener('mousemove',e=>{mouse.x=e.clientX/innerWidth;mouse.y=e.clientY/innerHeight});
+
+function bootGL(canvasId, fsSrc){
+  const canvas=document.getElementById(canvasId);
+  const gl=canvas.getContext('webgl',{alpha:false,antialias:true});
+  if(!gl) return ()=>false;
+  const mk=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);return sh};
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mk(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,mk(gl.FRAGMENT_SHADER,fsSrc));
+  gl.linkProgram(prog);gl.useProgram(prog);
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const pos=gl.getAttribLocation(prog,'position');
+  gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+  const lRes=gl.getUniformLocation(prog,'u_resolution');
+  const lT=gl.getUniformLocation(prog,'u_time');
+  const lM=gl.getUniformLocation(prog,'u_mouse');
+  const resize=()=>{
+    const d=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=innerWidth*d;canvas.height=innerHeight*d;
+    gl.viewport(0,0,canvas.width,canvas.height);
+  };
+  addEventListener('resize',resize);resize();
+  return (tSec)=>{
+    gl.uniform2f(lRes,canvas.width,canvas.height);
+    gl.uniform1f(lT,tSec);
+    gl.uniform2f(lM,mouse.x,1-mouse.y);
+    gl.drawArrays(gl.TRIANGLES,0,6);
+    return true;
+  };
+}
+let drawDark=null, drawLight=null, glRAF=0, glT0=Date.now();
+function startGL(){
+  if(window.__lowPowerMode || glRAF) return;
+  if(!drawDark) drawDark=bootGL('bg-dark',FS_DARK);
+  if(!drawLight) drawLight=bootGL('bg-light',FS_LIGHT);
+  glT0=Date.now();
+  function loop(){
+    if(window.__lowPowerMode){glRAF=0;return;}
+    const t=(Date.now()-glT0)/1000;
+    drawDark(t);drawLight(t);
+    glRAF=requestAnimationFrame(loop);
+  }
+  glRAF=requestAnimationFrame(loop);
+}
+function stopGL(){
+  if(glRAF) cancelAnimationFrame(glRAF);
+  glRAF=0;
+}
+startGL();
+addEventListener('ppt-low-power-change', e=>{e.detail.on ? stopGL() : startGL();});
+
+// =============== 导航（翻页 / 圆点 / 键盘 / 滚轮 / 触屏） ===============
+const deck=document.getElementById('deck');
+const slides=deck.querySelectorAll('.slide');
+const nav=document.getElementById('nav');
+let idx=0,total=slides.length,lock=false;
+
+// 关键：矫正 deck 宽度为 total * 100vw，否则翻页会错位
+deck.style.width=(total*100)+'vw';
+
+slides.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.className='dot';b.dataset.i=i;b.setAttribute('aria-label','Page '+(i+1));
+  b.onclick=()=>go(i);
+  nav.appendChild(b);
+});
+
+function go(n){
+  if(lock)return;
+  idx=Math.max(0,Math.min(total-1,n));
+  window.__currentSlideIndex = idx;
+  if(window.__onDeckSlide) window.__onDeckSlide(idx);
+  deck.style.transform=`translateX(${-idx*100}vw)`;
+  nav.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  /* 主题切换：优先读 data-theme，其次从 class（light/dark）推断 */
+  const el=slides[idx];
+  const th=el.dataset.theme || (el.classList.contains('light')?'light':(el.classList.contains('dark')?'dark':'dark'));
+  document.body.classList.remove('light-bg');
+  /* 动效：翻页过渡中段触发当前页的入场动画（由 motion-boot 注册） */
+  if(window.__playSlide) setTimeout(()=>window.__playSlide(idx), 450);
+  lock=true;setTimeout(()=>lock=false,700);
+}
+
+/* =============== ESC 索引视图 =============== */
+let overviewOn=false;
+const ov=document.createElement('div');
+ov.id='overview';
+ov.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(var(--ink-rgb),.92);backdrop-filter:blur(12px);display:none;overflow-y:auto;padding:4vh 4vw';
+document.body.appendChild(ov);
+
+function buildOverview(){
+  ov.innerHTML='';
+  const grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:2vh 1.6vw;max-width:90vw;margin:0 auto';
+  slides.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.style.cssText='cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid '+(i===idx?'rgba(var(--paper-rgb),.8)':'rgba(var(--paper-rgb),.15)')+';transition:border-color .2s';
+    card.onmouseenter=()=>card.style.borderColor='rgba(var(--paper-rgb),.6)';
+    card.onmouseleave=()=>card.style.borderColor=i===idx?'rgba(var(--paper-rgb),.8)':'rgba(var(--paper-rgb),.15)';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;pointer-events:none;background:'+(s.classList.contains('light')?'var(--paper)':'var(--ink)');
+    const clone=s.cloneNode(true);
+    clone.style.cssText='width:100vw;height:100vh;transform:scale('+(1/4.5)+');transform-origin:top left;position:absolute;top:0;left:0;pointer-events:none';
+    wrap.appendChild(clone);
+    const label=document.createElement('div');
+    label.style.cssText='padding:6px 10px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);opacity:.7';
+    label.textContent=(i+1)+' / '+total;
+    card.appendChild(wrap);
+    card.appendChild(label);
+    card.onclick=()=>{toggleOverview();go(i)};
+    grid.appendChild(card);
+  });
+  ov.appendChild(grid);
+}
+
+function toggleOverview(){
+  overviewOn=!overviewOn;
+  if(overviewOn){buildOverview();ov.style.display='block';}
+  else{ov.style.display='none';}
+}
+
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();toggleOverview();return;}
+  if(e.key && e.key.toLowerCase()==='b' && !e.metaKey && !e.ctrlKey && !e.altKey){
+    e.preventDefault();
+    window.__setLowPowerMode(!window.__lowPowerMode);
+    return;
+  }
+  if(overviewOn)return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '||e.key==='ArrowDown'){
+    if(window.__pipeAdvance && window.__pipeAdvance()) return;
+    go(idx+1);
+    return;
+  }
+  if(e.key==='ArrowLeft'||e.key==='PageUp'||e.key==='ArrowUp')go(idx-1);
+  if(e.key==='Home')go(0);
+  if(e.key==='End')go(total-1);
+});
+
+let wheelTO=null,wheelAcc=0;
+addEventListener('wheel',e=>{
+  wheelAcc+=e.deltaY+e.deltaX;
+  if(Math.abs(wheelAcc)>50){
+    if(wheelAcc>0 && window.__pipeAdvance && window.__pipeAdvance()){
+      wheelAcc=0;
+    }else{
+      go(idx+(wheelAcc>0?1:-1));wheelAcc=0;
+    }
+  }
+  clearTimeout(wheelTO);wheelTO=setTimeout(()=>wheelAcc=0,150);
+},{passive:true});
+
+let tx=0,ty=0;
+addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{
+  const dx=(e.changedTouches[0].clientX-tx);
+  const dy=(e.changedTouches[0].clientY-ty);
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){
+    if(dx<0 && window.__pipeAdvance && window.__pipeAdvance()) return;
+    go(idx+(dx<0?1:-1));
+  }
+},{passive:true});
+
+go(0);
+</script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+
+<!-- ============ Motion One 动效引擎（本地优先,CDN 兜底） ============
+     加载策略:先 ./assets/motion.min.js(本地,离线可用),失败 fallback 到 jsDelivr CDN
+     加载完成后挂 window.__playSlide / window.__pipeAdvance,
+     导航脚本会在翻页中段调用 __playSlide(idx),键盘/滚轮/触屏会在翻页前调用 __pipeAdvance()
+     双双失败时会兜底把所有 [data-anim] 设为可见,不让动效破坏阅读
+-->
+<script type="module">
+let motion;
+try {
+  motion = await import('./assets/motion.min.js');
+} catch(e1) {
+  try {
+    motion = await import('https://cdn.jsdelivr.net/npm/motion@11.11.17/+esm');
+  } catch(e2) {
+    console.warn('[motion] local + CDN both failed, disabling animations', e1, e2);
+    document.querySelectorAll('[data-anim]').forEach(el=>{el.style.opacity='1';el.style.transform='none'});
+    document.querySelectorAll('[data-animate="pipeline"] [data-anim]').forEach(el=>el.style.opacity='1');
+  }
+}
+
+if(motion){
+  const { animate, stagger } = motion;
+  document.body.classList.add('motion-ready');
+  const EASE = [.22, 1, .36, 1];
+  const slides = [...document.querySelectorAll('.slide')];
+  let pipeStep = -1;
+  let lastIdx = -1;
+
+  function resetAnims(slide){
+    slide.querySelectorAll('[data-anim]').forEach(el=>{
+      el.style.opacity='';
+      el.style.transform='';
+    });
+  }
+
+  function revealStatic(slide){
+    resetAnims(slide);
+    document.getAnimations?.().forEach(a=>a.cancel());
+    slide.querySelectorAll('[data-anim]').forEach(el=>{
+      el.style.opacity='1';
+      el.style.transform='none';
+    });
+  }
+
+  function playSlide(i){
+    const slide = slides[i];
+    if(!slide) return;
+    lastIdx = i;
+    const recipe = slide.dataset.animate || (slide.classList.contains('hero') ? 'hero' : 'cascade');
+
+    if(window.__lowPowerMode){
+      revealStatic(slide);
+      return;
+    }
+
+    if(recipe === 'pipeline'){
+      pipeStep = -1;
+      slide.querySelectorAll('[data-anim]').forEach(el=>{
+        el.style.opacity='0.15';
+        el.style.transform='none';
+      });
+      return;
+    }
+
+    resetAnims(slide);
+    const all = [...slide.querySelectorAll('[data-anim]')];
+    if(!all.length) return;
+
+    if(recipe === 'directional'){
+      const lefts  = all.filter(el=>el.dataset.anim==='left');
+      const divs   = all.filter(el=>el.dataset.anim==='divider');
+      const rights = all.filter(el=>el.dataset.anim==='right');
+      const others = all.filter(el=>!['left','right','divider'].includes(el.dataset.anim));
+      if(others.length) animate(others, {opacity:[0,1], y:[12,0]}, {duration:.6, delay:stagger(.1, {start:.15}), easing:EASE});
+      if(lefts.length)  animate(lefts,  {opacity:[0,1], x:[-24,0]}, {duration:.8, delay:.35, easing:EASE});
+      if(divs.length)   animate(divs,   {opacity:[0,.25]},          {duration:.5, delay:.9});
+      if(rights.length) animate(rights, {opacity:[0,1], x:[24,0]},  {duration:.8, delay:1.0, easing:EASE});
+      return;
+    }
+
+    if(recipe === 'quote'){
+      const lines = all.filter(el=>el.dataset.anim==='line');
+      const others = all.filter(el=>el.dataset.anim!=='line');
+      if(others.length) animate(others, {opacity:[0,1], y:[8,0]},    {duration:.6, delay:stagger(.12, {start:.2}), easing:EASE});
+      if(lines.length)  animate(lines,  {opacity:[.35,1], y:[10,0]}, {duration:.8, delay:stagger(.55, {start:.5}), easing:EASE});
+      return;
+    }
+
+    if(recipe === 'hero'){
+      animate(all, {opacity:[0,1], y:[14,0]}, {duration:.9, delay:stagger(.16, {start:.2}), easing:EASE});
+      return;
+    }
+
+    // default: cascade
+    animate(all, {opacity:[0,1], y:[16,0]}, {duration:.75, delay:stagger(.1, {start:.15}), easing:EASE});
+  }
+
+  function pipeAdvance(){
+    if(window.__lowPowerMode) return false;
+    const slide = slides[lastIdx];
+    if(!slide || slide.dataset.animate !== 'pipeline') return false;
+    const steps  = [...slide.querySelectorAll('[data-anim="step"]')];
+    const arrows = [...slide.querySelectorAll('[data-anim="arrow"]')];
+    if(pipeStep >= steps.length - 1) return false;
+    pipeStep++;
+    animate(steps[pipeStep], {opacity:[0.15,1], y:[8,0]}, {duration:.5, easing:EASE});
+    if(pipeStep > 0 && arrows[pipeStep-1]){
+      animate(arrows[pipeStep-1], {opacity:[0.15,.7]}, {duration:.3, delay:.15});
+    }
+    return true;
+  }
+
+  window.__playSlide = playSlide;
+  window.__pipeAdvance = pipeAdvance;
+
+  // 首屏:go(0) 已跑过(同步),没来得及触发动效 → 这里补一下
+  playSlide(0);
+}
+</script>
+
+<div id="story-drawer" aria-live="polite" aria-hidden="true"></div>
+
+<div id="genre-showcase" class="genre-showcase" aria-hidden="true">
+  <button class="gs-close" type="button" aria-label="关闭">×</button>
+  <div class="gs-img-wrap" role="img" aria-hidden="true"></div>
+  <div class="gs-cap">
+    <h3 class="gs-name"></h3>
+    <p class="gs-stats"></p>
+    <p class="gs-track"></p>
+    <p class="gs-blurb"></p>
+    <p class="gs-story"></p>
+    <div class="gs-playlist" role="list"></div>
+  </div>
+</div>
+
+<div id="music-bar" aria-live="polite">
+  <div class="mp-track">—</div>
+  <div class="mp-artist"></div>
+  <div class="mp-mode">悬停试听</div>
+  <div class="mp-actions">
+    <button class="mp-btn" id="music-close" type="button" title="关闭">×</button>
+  </div>
+  <audio id="music-audio" preload="none"></audio>
+  <iframe id="music-spotify" class="hidden" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+</div>
+
+
+<script src="js/meteor-bg.js?v=1"></script>
+<script>window.__WEB_DATA_BASE = "../web/data/";</script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="../web/js/tableau-theme.js?v=103"></script>
+<script src="../web/js/chart-stories.js?v=111"></script>
+<script src="../web/js/charts.js?v=111"></script>
+<script src="js/genre-showcase.js?v=111"></script>
+<script src="js/story-panel.js?v=111"></script>
+<script src="js/music-player.js?v=111"></script>
+<script src="js/deck-main.js?v=111"></script>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "main_genres": {
+    "Pop": "#499894",
+    "Easy Listening": "#4e79a7",
+    "Jazz": "#59a14f",
+    "HipHop": "#79706e",
+    "Traditional Music": "#79706e",
+    "R&B": "#86bcb6",
+    "Latin": "#8cd17d",
+    "Classical": "#9d7660",
+    "Electronic": "#a0cbe8",
+    "Blues": "#b07aa1",
+    "Metal": "#b6992d",
+    "NewAge": "#bab0ac",
+    "Christian": "#d4a6c8",
+    "Country": "#d7b5a6",
+    "Reggae": "#e15759",
+    "EasyListening": "#f1ce63",
+    "New Age": "#f1ce63",
+    "Folk": "#f28e2b",
+    "Rock": "#ff9d9a",
+    "Hip Hop": "#ffbe7d",
+    "TraditionalMusic": "#ffbe7d"
+  },
+  "artists": {
+    "Billie Eilish": "#4e79a7",
+    "Linkin Park": "#59a14f",
+    "Drake": "#76b7b2",
+    "The Weeknd": "#b07aa1",
+    "Bad Bunny": "#e15759",
+    "Mrs. GREEN APPLE": "#edc948",
+    "Taylor Swift": "#f28e2b"
+  },
+  "rank_groups": {
+    "Top 100": "#e15759",
+    "Middle(101-9000)": "#59a14f",
+    "Edge (9000-10000)": "#4e79a7"
+  },
+  "measures": {
+    "danceability": {
+      "palette": "orange",
+      "mark": "#e15759"
+    },
+    "energy": {
+      "palette": "green",
+      "mark": "#59a14f"
+    },
+    "loudness": {
+      "palette": "blue",
+      "mark": "#4e79a7"
+    },
+    "tempo": {
+      "palette": "purple",
+      "mark": "#76b7b2"
+    }
+  },
+  "top100_mark": "#75a1c7",
+  "explicit_trend_genres": [
+    "HipHop",
+    "Latin",
+    "Pop",
+    "R&B",
+    "Rock"
+  ]
+}

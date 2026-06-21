@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b6992d" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#1a1a1a" stop-opacity=".88"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)"/>
+  <text x="48" y="120" fill="#f1efea" font-family="Georgia,serif" font-size="28" letter-spacing="6" opacity=".55">GENRE</text>
+  <text x="48" y="220" fill="#f1efea" font-family="Georgia,serif" font-size="72" font-weight="700">Metal</text>
+  <circle cx="680" cy="180" r="90" fill="#f1efea" opacity=".08"/>
+  <text x="48" y="900" fill="#f1efea" font-family="monospace" font-size="22" opacity=".45">10,000 HEARTBEATS</text>
+</svg>
