@@ -11,7 +11,7 @@
 - **演示稿（推荐）**：https://asbaniaworld-ui.github.io/10-000-/deck/
 - **Web 滚动版**：https://asbaniaworld-ui.github.io/10-000-/web/
 
-> 首次推送后需在仓库 **Settings → Pages** 中将 Source 设为 **GitHub Actions**（workflow 已包含在 `.github/workflows/pages.yml`）。
+> 首次推送后需在仓库 **Settings → Pages** 中将 Source 设为 **GitHub Actions**（workflow 已包含在 `.github/workflows/pages.yml`）。若首次 workflow 失败，启用 Pages 后进入 **Actions** 页重新运行即可。
 
 ### 本地预览
 
